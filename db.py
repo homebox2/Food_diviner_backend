@@ -40,7 +40,7 @@ class DBConn:
                             "(SELECT GROUP_CONCAT(has ORDER BY ordering_id SEPARATOR '') FROM restaurantOrdering O WHERE O.restaurant_id = I.restaurant_id), "
                             "(SELECT GROUP_CONCAT(has ORDER BY cuisine_id SEPARATOR '') FROM restaurantCuisine C WHERE C.restaurant_id = I.restaurant_id), "
                             "scenario, special, phone, hours2, remark, "
-                            "(SELECT GROUP_CONCAT(DISTINCT tag) FROM tags T WHERE T.restaurant_id = I.restaurant_id) FROM restaurantInfo I")
+                            "(SELECT GROUP_CONCAT(DISTINCT tag) FROM tags T WHERE T.restaurant_id = I.restaurant_id) FROM restaurantInfo I ORDER BY restaurant_id")
         result = self.cursor.fetchall()
 
         # 宣告空list
@@ -96,7 +96,7 @@ class DBConn:
                             "(SELECT GROUP_CONCAT(has ORDER BY ordering_id SEPARATOR '') FROM restaurantOrdering O WHERE O.restaurant_id = I.restaurant_id), "
                             "(SELECT GROUP_CONCAT(has ORDER BY cuisine_id SEPARATOR '') FROM restaurantCuisine C WHERE C.restaurant_id = I.restaurant_id), "
                             "hours2, (SELECT GROUP_CONCAT(DISTINCT tag) FROM tags T WHERE T.restaurant_id = I.restaurant_id) "
-                            "FROM restaurantInfo I")
+                            "FROM restaurantInfo I ORDER BY restaurant_id")
         result = self.cursor.fetchall()
 
         # 宣告空list
@@ -168,7 +168,7 @@ class DBConn:
     def getRestaurantsInfo(self):
         # SQL query
         self.cursor.execute('SELECT restaurant_id, name, address, price, ordering, cuisine, scenario, special, phone, hours, remark, '
-                            '(SELECT GROUP_CONCAT(DISTINCT tag) FROM tags T WHERE T.restaurant_id = I.restaurant_id) FROM restaurantInfo I')
+                            '(SELECT GROUP_CONCAT(DISTINCT tag) FROM tags T WHERE T.restaurant_id = I.restaurant_id) FROM restaurantInfo I ORDER BY restaurant_id')
         result = self.cursor.fetchall()
 
         # 宣告空list
@@ -280,7 +280,7 @@ class DBConn:
                             "(SELECT GROUP_CONCAT(has ORDER BY ordering_id SEPARATOR '') FROM userOrdering O WHERE O.user_id = I.user_id), "
                             "(SELECT GROUP_CONCAT(has ORDER BY cuisine_id SEPARATOR '') FROM userCuisine C WHERE C.user_id = I.user_id), "
                             "(SELECT GROUP_CONCAT(DISTINCT tag) FROM tags T WHERE T.user_id = I.user_id) "
-                            "FROM userInfo I ")
+                            "FROM userInfo I ORDER BY user_id")
         result = self.cursor.fetchall()
 
         # 宣告空list
@@ -620,7 +620,7 @@ class DBConn:
     def getTFIDFWithIDs(self, uid, rid):
         # SQL query
         self.cursor.execute('SELECT SUM(TFIDF) FROM (SELECT (COUNT(*) / (SELECT COUNT(*) FROM tags WHERE restaurant_id = %s) * IDF) AS TFIDF '
-                            'FROM ((SELECT tag, (SELECT COUNT(*) FROM restaurantInfo) / COUNT(DISTINCT restaurant_id) AS IDF FROM tags GROUP BY tag) AS A '
+                            'FROM ((SELECT tag, LOG((SELECT COUNT(*) FROM restaurantInfo) / COUNT(DISTINCT restaurant_id)) AS IDF FROM tags GROUP BY tag) AS A '
                             'NATURAL JOIN (SELECT tag FROM tags WHERE user_id = %s GROUP BY tag) AS B '
                             'NATURAL JOIN (SELECT tag FROM tags WHERE restaurant_id = %s) AS C) GROUP BY tag) AS D', (rid, uid, rid))
 
@@ -636,7 +636,7 @@ class DBConn:
         self.cursor.execute('SELECT restaurant_id, IFNULL(SUM(TFIDF), 0) FROM (SELECT restaurant_id, ((COUNT(*) / TOTAL) * IDF) AS TFIDF FROM '
                             '(SELECT restaurant_id FROM restaurantInfo) AS A LEFT JOIN '
                             '((SELECT restaurant_id, tag FROM tags) AS B NATURAL JOIN '
-                            '(SELECT tag, (SELECT COUNT(*) FROM restaurantInfo) / COUNT(DISTINCT restaurant_id) AS IDF FROM tags GROUP BY tag) AS C NATURAL JOIN '
+                            '(SELECT tag, LOG((SELECT COUNT(*) FROM restaurantInfo) / COUNT(DISTINCT restaurant_id)) AS IDF FROM tags GROUP BY tag) AS C NATURAL JOIN '
                             '(SELECT tag FROM tags WHERE user_id = %s GROUP BY tag) AS D) USING(restaurant_id) LEFT JOIN '
                             '(SELECT restaurant_id, COUNT(*) AS TOTAL FROM tags GROUP BY restaurant_id) AS E USING(restaurant_id) '
                             'GROUP BY restaurant_id, tag) AS F GROUP BY(restaurant_id)', uid)
@@ -645,47 +645,53 @@ class DBConn:
 
 
     # ========== WEIGHT ==========
+    # 更新總體的權重
+    def insertTotalWeight(self, R2R, U2R, U2U):
+        # SQL query
+        self.cursor.execute('INSERT INTO totalWeight(r2r, u2r, u2u) VALUES(%s, %s, %s)', (R2R, U2R, U2U))
+
+    # 傳回總體的權重
+    def getTotalWeight(self):
+        # SQL query
+        self.cursor.execute('SELECT r2r, u2r, u2u FROM totalWeight ORDER BY timestamp DESC LIMIT 1')
+        record = self.cursor.fetchall()[0]
+        return {'R2R': record[0], 'U2R': record[1], 'U2U': record[2]}
+
     # 更新R2R的權重
-    def updateR2RWeights(self):
-        #TODO 有哪些?
-        return
+    def insertR2RWeightWithID(self, rid, distance, price, ordering, cuisine):
+        # SQL query
+        self.cursor.execute('INSERT INTO R2RWeight(user_id, distance, price, ordering, cuisine) VALUES(%s, %s, %s, %s, %s)', (distance, price, ordering, cuisine))
 
     # 傳回R2R最新的權重
-    def getR2RWeights(self):
-        # TODO 有哪些?
-        return
+    def getR2RWeightWithID(self, rid):
+        # SQL query
+        self.cursor.execute('SELECT distance, price, ordering, cuisine FROM R2RWeight WHERE restaurant_id = %s ORDER BY timestamp DESC LIMIT 1', rid)
+        record = self.cursor.fetchall()[0]
+        return {'distance': record[0], 'price': record[1], 'ordering': record[2], 'cuisine': record[3]}
 
     # 更新U2R的權重
-    def updateU2RWeights(self, TFIDF, price, ordering, cuisine):
+    def insertU2RWeightWithID(self, uid, TFIDF, price, ordering, cuisine):
         # SQL query
-        self.cursor.execute('INSERT INTO U2RWeight(tfidf, price, ordering, cuisine) VALUES(%s, %s, %s, %s) '
-                            'ON DUPLICATE KEY UPDATE tfidf = %s, price = %s, ordering = %s, cuisine = %s',
-                            (TFIDF, price, ordering, cuisine, TFIDF, price, ordering, cuisine))
+        self.cursor.execute('INSERT INTO U2RWeight(user_id, tfidf, price, ordering, cuisine) VALUES(%s, %s, %s, %s, %s) ', (uid, TFIDF, price, ordering, cuisine))
 
     # 傳回U2R最新的權重
-    def getU2RWeights(self):
+    def getU2RWeightWithID(self, uid):
         # SQL query
-        self.cursor.execute('SELECT tfidf, price, ordering, cuisine, timestamp FROM U2RWeight ORDER BY timestamp DESC LIMIT 1')
-
-        return [x for x in self.cursor.fetchall()[0]]
+        self.cursor.execute('SELECT tfidf, price, ordering, cuisine FROM U2RWeight WHERE user_id = %s ORDER BY timestamp DESC LIMIT 1', uid)
+        record = self.cursor.fetchall()[0]
+        return {'tfidf': record[0], 'price': record[1], 'ordering': record[2], 'cuisine': record[3]}
 
     # 更新U2U的權重
-    def updateU2UWeights(self, tag, price, ordering, cuisine):
+    def insertU2UWeightWithID(self, uid, tag, price, ordering, cuisine):
         # SQL query
-        self.cursor.execute(
-            'INSERT INTO U2UWeight(tag, price, ordering, cuisine) VALUES(%s, %s, %s, %s) ON DUPLICATE KEY '
-            'UPDATE tag = %s, price = %s, ordering = %s, cuisine = %s', (tag, price, ordering, cuisine, tag, price, ordering, cuisine))
+        self.cursor.execute('INSERT INTO U2UWeight(user_id, tag, price, ordering, cuisine) VALUES(%s, %s, %s, %s, %s) ', (tag, price, ordering, cuisine))
 
     # 傳回U2U最新的權重
     def getU2UWeightWithID(self, uid):
         # SQL query
-        self.cursor.execute('SELECT tag, price, ordering, cuisine FROM U2UWeight WHERE user_id = %s ORDER BY timestamp DESC LIMIT 1')
-
-        return [x for x in self.cursor.fetchall()[0]]
+        self.cursor.execute('SELECT tag, price, ordering, cuisine FROM U2UWeight WHERE user_id = %s ORDER BY timestamp DESC LIMIT 1', uid)
+        record = self.cursor.fetchall()[0]
+        return {'tag': record[0], 'price': record[1], 'ordering': record[2], 'cuisine': record[3]}
 
 # 常用的update? => executemany
-# timestamp? => 改server time zone
-# WEIGHT!!
-
-#import random
-#print(round(random.random()))
+# timestamp? => which table?
