@@ -263,9 +263,9 @@ class DBConn:
 
     # ========== USER ==========
     # 新增使用者的基本資訊
-    def insertUserInfo(self, name, gender, account):
+    def insertUserInfo(self, name, gender, account, password):
         # SQL query
-        self.cursor.execute('INSERT INTO userInfo(name, gender, account) VALUES(%s, %s, %s)', (name, gender, account))
+        self.cursor.execute('INSERT INTO userInfo(name, gender, account, password) VALUES(%s, %s, %s, %s)', (name, gender, account, password))
 
         # TODO price cuisine ordering的值?
 
@@ -275,7 +275,7 @@ class DBConn:
     # 傳回所有使用者的資訊
     def getUsersInfo(self):
         # SQL query price ordering cuisine
-        self.cursor.execute("SELECT user_id, name, gender, account, "
+        self.cursor.execute("SELECT user_id, name, gender, account, password, "
                             "(SELECT GROUP_CONCAT(has ORDER BY price_id SEPARATOR '') FROM userPrice P WHERE P.user_id = I.user_id), "
                             "(SELECT GROUP_CONCAT(has ORDER BY ordering_id SEPARATOR '') FROM userOrdering O WHERE O.user_id = I.user_id), "
                             "(SELECT GROUP_CONCAT(has ORDER BY cuisine_id SEPARATOR '') FROM userCuisine C WHERE C.user_id = I.user_id), "
@@ -288,17 +288,17 @@ class DBConn:
 
         for record in result:
 
-            price = [int(x) for x in record[4]]
+            price = [int(x) for x in record[5]]
 
-            ordering = [int(x) for x in record[5]]
+            ordering = [int(x) for x in record[6]]
 
-            cuisine = [int(x) for x in record[6]]
+            cuisine = [int(x) for x in record[7]]
 
-            tags = [x for x in record[7].split(',')] if record[7] is not None else []
+            tags = [x for x in record[8].split(',')] if record[8] is not None else []
 
             # 每筆資料用dict存
-            dict = {'uid': record[0], 'name': record[1], 'gender': record[2], 'account': record[3], 'price': price,
-                    'ordering': ordering, 'cuisine': cuisine, 'tags': tags}
+            dict = {'uid': record[0], 'name': record[1], 'gender': record[2], 'account': record[3], 'password': record[4],
+                    'price': price, 'ordering': ordering, 'cuisine': cuisine, 'tags': tags}
 
             # 把每筆資料存到list
             list.append(dict)
@@ -308,7 +308,7 @@ class DBConn:
     # 傳回使用者的基本資訊
     def getUserInfoWithID(self, uid):
         # SQL query price ordering cuisine
-        self.cursor.execute("SELECT user_id, name, gender, account, "
+        self.cursor.execute("SELECT user_id, name, gender, account, password, "
                             "(SELECT GROUP_CONCAT(has ORDER BY price_id SEPARATOR '') FROM userPrice P WHERE P.user_id = I.user_id), "
                             "(SELECT GROUP_CONCAT(has ORDER BY ordering_id SEPARATOR '') FROM userOrdering O WHERE O.user_id = I.user_id), "
                             "(SELECT GROUP_CONCAT(has ORDER BY cuisine_id SEPARATOR '') FROM userCuisine C WHERE C.user_id = I.user_id), "
@@ -321,17 +321,17 @@ class DBConn:
 
         record = self.cursor.fetchall()[0]
 
-        price = [int(x) for x in record[4]]
+        price = [int(x) for x in record[5]]
 
-        ordering = [int(x) for x in record[5]]
+        ordering = [int(x) for x in record[6]]
 
-        cuisine = [int(x) for x in record[6]]
+        cuisine = [int(x) for x in record[7]]
 
-        tags = [x for x in record[7].split(',')] if record[7] is not None else []
+        tags = [x for x in record[8].split(',')] if record[8] is not None else []
 
         # 每筆資料用dict存
-        dict = {'uid': record[0], 'name': record[1], 'gender': record[2], 'account': record[3], 'price': price,
-                'ordering': ordering, 'cuisine': cuisine, 'tags': tags}
+        dict = {'uid': record[0], 'name': record[1], 'gender': record[2], 'account': record[3], 'password': record[4],
+                'price': price, 'ordering': ordering, 'cuisine': cuisine, 'tags': tags}
 
         return dict
 
