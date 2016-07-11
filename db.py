@@ -645,53 +645,24 @@ class DBConn:
 
 
     # ========== WEIGHT ==========
-    # 更新總體的權重
-    def insertTotalWeight(self, R2R, U2R, U2U):
+    # 新增多筆權重 list:[(uid, R2R, U2R, U2U, context, ...), ...]
+    def insertWeightWithID(self, list):
         # SQL query
-        self.cursor.execute('INSERT INTO totalWeight(r2r, u2r, u2u) VALUES(%s, %s, %s)', (R2R, U2R, U2U))
+        self.cursor.executemany('INSERT INTO weight(user_id, R2R, U2R, U2U, context, R2R_distance, R2R_price, R2R_ordering, R2R_cuisine, '
+                                'U2R_TFIDF, U2R_price, U2R_ordering, U2R_cuisine, U2U_tag, U2U_price, U2U_ordering, U2U_cuisine, '
+                                'context_1, context_2, context_3, context_4) VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, '
+                                '%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)', list)
 
-    # 傳回總體的權重
-    def getTotalWeight(self):
+    # 傳回使用者最新的權重
+    def getWeightWithID(self, uid):
         # SQL query
-        self.cursor.execute('SELECT r2r, u2r, u2u FROM totalWeight ORDER BY timestamp DESC LIMIT 1')
+        self.cursor.execute('SELECT * from weight WHERE user_id = %s ORDER BY timestamp DESC LIMIT 1', uid)
         record = self.cursor.fetchall()[0]
-        return {'R2R': record[0], 'U2R': record[1], 'U2U': record[2]}
-
-    # 更新R2R的權重
-    def insertR2RWeightWithID(self, rid, distance, price, ordering, cuisine):
-        # SQL query
-        self.cursor.execute('INSERT INTO R2RWeight(user_id, distance, price, ordering, cuisine) VALUES(%s, %s, %s, %s, %s)', (distance, price, ordering, cuisine))
-
-    # 傳回R2R最新的權重
-    def getR2RWeightWithID(self, rid):
-        # SQL query
-        self.cursor.execute('SELECT distance, price, ordering, cuisine FROM R2RWeight WHERE restaurant_id = %s ORDER BY timestamp DESC LIMIT 1', rid)
-        record = self.cursor.fetchall()[0]
-        return {'distance': record[0], 'price': record[1], 'ordering': record[2], 'cuisine': record[3]}
-
-    # 更新U2R的權重
-    def insertU2RWeightWithID(self, uid, TFIDF, price, ordering, cuisine):
-        # SQL query
-        self.cursor.execute('INSERT INTO U2RWeight(user_id, tfidf, price, ordering, cuisine) VALUES(%s, %s, %s, %s, %s) ', (uid, TFIDF, price, ordering, cuisine))
-
-    # 傳回U2R最新的權重
-    def getU2RWeightWithID(self, uid):
-        # SQL query
-        self.cursor.execute('SELECT tfidf, price, ordering, cuisine FROM U2RWeight WHERE user_id = %s ORDER BY timestamp DESC LIMIT 1', uid)
-        record = self.cursor.fetchall()[0]
-        return {'tfidf': record[0], 'price': record[1], 'ordering': record[2], 'cuisine': record[3]}
-
-    # 更新U2U的權重
-    def insertU2UWeightWithID(self, uid, tag, price, ordering, cuisine):
-        # SQL query
-        self.cursor.execute('INSERT INTO U2UWeight(user_id, tag, price, ordering, cuisine) VALUES(%s, %s, %s, %s, %s) ', (tag, price, ordering, cuisine))
-
-    # 傳回U2U最新的權重
-    def getU2UWeightWithID(self, uid):
-        # SQL query
-        self.cursor.execute('SELECT tag, price, ordering, cuisine FROM U2UWeight WHERE user_id = %s ORDER BY timestamp DESC LIMIT 1', uid)
-        record = self.cursor.fetchall()[0]
-        return {'tag': record[0], 'price': record[1], 'ordering': record[2], 'cuisine': record[3]}
+        return {'uid': record[1], 'R2R': record[2], 'U2R': record[3], 'U2U': record[4], 'context': record[5],
+                'R2R_distance': record[6], 'R2R_price': record[7], 'R2R_ordering': record[8], 'R2R_cuisine': record[9],
+                'U2R_TFIDF': record[10], 'U2R_price': record[11], 'U2R_ordering': record[12], 'U2R_cuisine': record[13],
+                'U2U_tag': record[14], 'U2U_price': record[15], 'U2U_ordering': record[16], 'U2U_cuisine': record[17],
+                'context_1': record[18], 'context_2': record[19], 'context_3': record[20], 'context_4': record[21]}
 
 # 常用的update? => executemany
 # timestamp? => which table?
