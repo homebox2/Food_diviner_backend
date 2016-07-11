@@ -4,13 +4,13 @@
 
 from similarity import similarity
 
-WEIGHT_DISTANCE = 0.2
-WEIGHT_PRICE = 0.3
-WEIGHT_ORDERING = 0.15
-WEIGHT_CUISINE = 0.35
+# WEIGHT_DISTANCE = 0.2
+# WEIGHT_PRICE = 0.3
+# WEIGHT_ORDERING = 0.15
+# WEIGHT_CUISINE = 0.35
 
 
-def calc_r2r(r1, r2, distance, order_sim_matrix, cuisine_sim_matrix):
+def calc_r2r(r1, r2, distance, order_sim_matrix, cuisine_sim_matrix, weight):
     """
     計算兩間餐廳的相似度
     :param r1 餐廳物件 。
@@ -21,10 +21,10 @@ def calc_r2r(r1, r2, distance, order_sim_matrix, cuisine_sim_matrix):
     :return: 餐廳之間的相似度，介於0~1之間。數值越大代表相似度越高。 
     """
     print(r1['price'], r2['price'])
-    distance_sim = calc_distance_sim(distance) * WEIGHT_DISTANCE
-    price_sim = calc_price_sim(r1["price"], r2["price"]) * WEIGHT_PRICE
-    ordering_sim = calc_ordering_sim(r1["ordering"], r2["ordering"], order_sim_matrix) * WEIGHT_ORDERING
-    cuisine_sim = calc_cuisine_sim(r1["cuisine"], r2["cuisine"], cuisine_sim_matrix) * WEIGHT_CUISINE
+    distance_sim = calc_distance_sim(distance) * weight["distance"]
+    price_sim = calc_price_sim(r1["price"], r2["price"]) * weight["price"]
+    ordering_sim = calc_ordering_sim(r1["ordering"], r2["ordering"], order_sim_matrix) * weight["ordering"]
+    cuisine_sim = calc_cuisine_sim(r1["cuisine"], r2["cuisine"], cuisine_sim_matrix) * weight["cuisine"]
     return distance_sim + price_sim + ordering_sim + cuisine_sim
 
 
