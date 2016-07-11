@@ -7,7 +7,7 @@ class DBConn:
 
     # 建構式
     def __init__(self):
-
+        '''
         self.host = '52.78.68.151'
         self.user = 'dbm'
         self.passwd = '5j0 wu654yji4'
@@ -17,7 +17,7 @@ class DBConn:
         self.user = 'datawar_user1'
         self.passwd = '[QzJUoHwFtq0'
         self.dbname = 'datawar_warofdata1'
-        '''
+
 
     # 建立連線
     def open(self):
@@ -367,20 +367,20 @@ class DBConn:
         return [x[0] for x in self.cursor.fetchall()]
 
     # 新增/更新使用者的各項分數
-    def updateUserModel(self, uid, price, ordering, cuisine):
+    def insertUserModelWithID(self, uid, price, ordering, cuisine):
 
         priceStr = str(price)
         orderingStr = str(ordering)
         cuisineStr = str(cuisine)
 
         # SQL query
-        self.cursor.execute('INSERT INTO userModel(user_id, priceScore, orderingScore, cuisineScore) VALUES(%s, %s, %s, %s) ON DUPLICATE KEY '
-                            'UPDATE priceScore = %s, orderingScore = %s, cuisineScore = %s', (uid, priceStr, orderingStr, cuisineStr, priceStr, orderingStr, cuisineStr))
+        self.cursor.execute('INSERT INTO userModel(user_id, priceScore, orderingScore, cuisineScore) VALUES(%s, %s, %s, %s)',
+                            (uid, priceStr, orderingStr, cuisineStr))
 
-    # 傳回使用者的各項分數
-    def getUserModel(self, uid):
+    # 傳回使用者最新的各項分數
+    def getUserModelWithID(self, uid):
         # SQL query
-        self.cursor.execute('SELECT * FROM userModel WHERE user_id = %s', uid)
+        self.cursor.execute('SELECT user_id, priceScore, orderingScore, cuisineScore FROM userModel WHERE user_id = %s ORDER BY timestamp DESC LIMIT 1', uid)
 
         record = self.cursor.fetchall()[0]
 
@@ -391,7 +391,7 @@ class DBConn:
         cuisine = literal_eval(record[3])
 
         # 每筆資料用dict存
-        dict = {'uid': record[0], 'price': price, 'ordering': ordering, 'cuisine': cuisine}
+        dict = {'uid': record[0], 'priceScore': price, 'orderingScore': ordering, 'cuisineScore': cuisine}
 
         return dict
 
