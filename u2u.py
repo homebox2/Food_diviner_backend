@@ -1,16 +1,15 @@
 from similarity import *
 
-WEIGHT_TAG = 0.25
-WEIGHT_PRICE = 0.25
-WEIGHT_ORDERING = 0.25
-WEIGHT_CUISINE = 0.25
+# WEIGHT_TAG = 0.25
+# WEIGHT_PRICE = 0.25
+# WEIGHT_ORDERING = 0.25
+# WEIGHT_CUISINE = 0.25
 
-
-def calc_u2u(u1, u2):
-    tag_sim = calc_tag_sim(u1['tags'], u2['tags']) * WEIGHT_TAG
-    price_sim = calc_price_sim(u1['price'], u2['price']) * WEIGHT_PRICE
-    ordering_sim = calc_ordering_sim(u1['ordering'], u2['ordering']) * WEIGHT_ORDERING
-    cuisine_sim = calc_cuisine_sim(u1['cuisine'], u2['cuisine']) * WEIGHT_CUISINE
+def calc_u2u(u1, u2, weight):
+    tag_sim = calc_tag_sim(u1['tags'], u2['tags']) * weight["tag"]
+    price_sim = calc_price_sim(u1['price'], u2['price']) * weight["price"]
+    ordering_sim = calc_ordering_sim(u1['ordering'], u2['ordering']) * weight["ordering"]
+    cuisine_sim = calc_cuisine_sim(u1['cuisine'], u2['cuisine']) * weight["cuisine"]
     return tag_sim + price_sim + ordering_sim + cuisine_sim
 
 
