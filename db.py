@@ -7,7 +7,7 @@ class DBConn:
 
     # 建構式
     def __init__(self):
-        '''
+
         self.host = '52.78.68.151'
         self.user = 'dbm'
         self.passwd = '5j0 wu654yji4'
@@ -17,7 +17,7 @@ class DBConn:
         self.user = 'datawar_user1'
         self.passwd = '[QzJUoHwFtq0'
         self.dbname = 'datawar_warofdata1'
-
+        '''
 
     # 建立連線
     def open(self):
@@ -267,8 +267,6 @@ class DBConn:
         # SQL query
         self.cursor.execute('INSERT INTO userInfo(name, gender, account, password) VALUES(%s, %s, %s, %s)', (name, gender, account, password))
 
-        # TODO price cuisine ordering的值?
-
         # 回傳他的uid
         return self.cursor.lastrowid
 
@@ -352,8 +350,24 @@ class DBConn:
 
     # 新增使用者的活動(run:第幾次 result:接受(1)、收藏(0)、拒絕(-1))
     def insertUserActivity(self, uid, rid, run, result):
-        # SQL query
-        self.cursor.execute('INSERT INTO userActivity(user_id, restaurant_id, run, result) VALUES(%s, $s, %s, %s)', (uid, rid, run, result))
+        # 接受 price ordering cuisine增加
+        if result == 1:
+            self.cursor.execute('INSERT INTO userActivity(user_id, restaurant_id, run, result) VALUES(%s, %s, %s, %s);'
+                                'UPDATE userPrice AS A INNER JOIN restaurantPrice AS B USING(price_id) '
+                                'SET A.has = A.has + B.has WHERE user_id = %s AND restaurant_id = %s;'
+                                'UPDATE userOrdering AS A INNER JOIN restaurantOrdering AS B USING(ordering_id) '
+                                'SET A.has = A.has + B.has WHERE user_id = %s AND restaurant_id = %s;'
+                                'UPDATE userCuisine AS A INNER JOIN restaurantCuisine AS B USING(cuisine_id) '
+                                'SET A.has = A.has + B.has WHERE user_id = %s AND restaurant_id = %s;',
+                                (uid, rid, run, result, uid, rid, uid, rid, uid, rid))
+        # 收藏
+        elif result == 0:
+            self.cursor.execute('INSERT INTO userActivity(user_id, restaurant_id, run, result) VALUES(%s, %s, %s, %s);'
+                                'INSERT INTO userCollection(user_id, restaurant_id) VALUES(%s, %s) '
+                                'ON DUPLICATE KEY UPDATE timestamp = NOW()', (uid, rid, run, result, uid, rid))
+        # 拒絕
+        elif result == 0:
+            self.cursor.execute('INSERT INTO userActivity(user_id, restaurant_id, run, result) VALUES(%s, %s, %s, %s)', (uid, rid, run, result))
 
     # 傳回使用者最後n個接受的餐廳
     def getUserActivity(self, uid, n):
@@ -413,6 +427,22 @@ class DBConn:
                 'pricePrio': record[6], 'cuisinePrio': record[7], 'soupPrio': record[8], 'ratePrio': record[9]}
 
         return dict
+
+    # 傳回使用者收藏的餐廳
+    def getUserCollection(self, uid):
+        # SQL query
+        self.cursor.execute('SELECT restaurant_id FROM userCollection WHERE user_id = %s', uid)
+
+        # DB回傳的結果為空
+        if self.cursor.rowcount == 0:
+            return []
+
+        return [x[0] for x in self.cursor.fetchall()]
+
+    # 刪除收藏
+    def deleteUserCollection(self, uid, rid):
+        # SQL query
+        self.cursor.execute('DELETE FROM userCollection WHERE user_id = %s AND restaurant_id = %s', (uid, rid))
 
 
     # ========== TAG ==========
