@@ -204,6 +204,49 @@ class DBConn:
         # 回傳
         return list
 
+    # 傳回多間餐廳的文字資訊 list:[rid1, rid2, ...]
+    def getRestaurantInfoWithIDs(self, list):
+
+
+        # SQL query
+        self.cursor.execute('SELECT restaurant_id, name, address, price, ordering, cuisine, scenario, special, phone, hours, remark, '
+                            '(SELECT GROUP_CONCAT(DISTINCT tag) FROM tags T WHERE T.restaurant_id = I.restaurant_id) '
+                            'FROM restaurantInfo I WHERE restaurant_id IN (' + ', '.join('%s' for x in range(len(list))) + ') ORDER BY restaurant_id', list)
+        result = self.cursor.fetchall()
+
+        # 宣告空list
+        list = []
+
+        for record in result:
+
+            # ['點菜方式', ...]
+            ordering = literal_eval(record[4])
+
+            # ['菜式', ...]
+            cuisine = literal_eval(record[5])
+
+            # ['用餐情境', ...]
+            scenario = literal_eval(record[6])
+
+            # ['招牌菜', ...]
+            special = literal_eval(record[7])
+
+            # ['備註', ...]
+            remark = literal_eval(record[10])
+
+            # ['tag', ...]
+            tags = [x for x in record[11].split(',')] if record[11] is not None else []
+
+            # 每筆資料用dict存
+            dict = {'rid': record[0], 'name': record[1], 'address': record[2], 'price': record[3], 'ordering': ordering, 'cuisine': cuisine,
+                    'scenario': scenario, 'special': special, 'phone': record[8], 'hours': record[9], 'remark': remark, 'tags': tags}
+
+            # 把每筆資料存到list
+            list.append(dict)
+
+        # 回傳
+        return list
+
     # 傳回餐廳的文字資訊
     def getRestaurantInfoWithID(self, rid):
         # SQL query
@@ -428,6 +471,11 @@ class DBConn:
 
         return dict
 
+    # 新增使用者收藏
+    def insertUserCollection(self, uid, rid):
+        self.cursor.execute('INSERT INTO userCollection(user_id, restaurant_id) VALUES(%s, %s) '
+                            'ON DUPLICATE KEY UPDATE timestamp = NOW()', (uid, rid))
+
     # 傳回使用者收藏的餐廳
     def getUserCollection(self, uid):
         # SQL query
@@ -444,6 +492,32 @@ class DBConn:
         # SQL query
         self.cursor.execute('DELETE FROM userCollection WHERE user_id = %s AND restaurant_id = %s', (uid, rid))
 
+    def getUserRatio(self, uid):
+        # SQL query
+        self.cursor.execute('SELECT * FROM (SELECT GROUP_CONCAT(IFNULL(ACC / TOTAL, 0) ORDER BY price_id) FROM (SELECT price_id, SUM(has) AS ACC FROM '
+                            '(SELECT * FROM userActivity WHERE result = 1) AS A '
+                            'NATURAL JOIN (SELECT * FROM restaurantPrice) AS B WHERE user_id = %s GROUP BY price_id) AS C '
+                            'NATURAL JOIN (SELECT price_id, SUM(has) AS TOTAL FROM (SELECT * FROM userActivity WHERE result = 1 OR result = -1) AS D '
+                            'NATURAL JOIN (SELECT * FROM restaurantPrice) AS E WHERE user_id = %s GROUP BY price_id) AS F) AS G, '
+                            '(SELECT GROUP_CONCAT(IFNULL(ACC / TOTAL, 0) ORDER BY ordering_id) FROM (SELECT ordering_id, SUM(has) AS ACC FROM '
+                            '(SELECT * FROM userActivity WHERE result = 1) AS A '
+                            'NATURAL JOIN (SELECT * FROM restaurantOrdering) AS B WHERE user_id = %s GROUP BY ordering_id) AS C '
+                            'NATURAL JOIN (SELECT ordering_id, SUM(has) AS TOTAL FROM (SELECT * FROM userActivity WHERE result = 1 OR result = -1) AS D '
+                            'NATURAL JOIN (SELECT * FROM restaurantOrdering) AS E WHERE user_id = %s GROUP BY ordering_id) AS F) AS H, '
+                            '(SELECT GROUP_CONCAT(IFNULL(ACC / TOTAL, 0) ORDER BY cuisine_id) FROM (SELECT cuisine_id, SUM(has) AS ACC FROM '
+                            '(SELECT * FROM userActivity WHERE result = 1) AS A '
+                            'NATURAL JOIN (SELECT * FROM restaurantCuisine) AS B WHERE user_id = %s GROUP BY cuisine_id) AS C '
+                            'NATURAL JOIN (SELECT cuisine_id, SUM(has) AS TOTAL FROM (SELECT * FROM userActivity WHERE result = 1 OR result = -1) AS D '
+                            'NATURAL JOIN (SELECT * FROM restaurantCuisine) AS E WHERE user_id = %s GROUP BY cuisine_id) AS F) AS I',
+                            (uid, uid, uid, uid, uid, uid))
+
+        record = self.cursor.fetchall()[0]
+
+        # 該使用者沒資料
+        if record[0] is None:
+            return {'price': [0.0 for i in range(5)], 'ordering': [0.0 for i in range(5)], 'cuisine': [0.0 for i in range(10)]}
+
+        return {'price': list(literal_eval(record[0])), 'ordering': list(literal_eval(record[1])), 'cuisine': list(literal_eval(record[2]))}
 
     # ========== TAG ==========
     # 新增tag(type: 1喜歡 -1討厭)
