@@ -749,13 +749,11 @@ class DBConn:
 
 
     # ========== WEIGHT ==========
-    # 新增多筆權重 list:[(uid, R2R, U2R, U2U, context, ...), ...]
-    def insertWeightWithID(self, list):
+    # 新增權重 dict:{R2R, U2R, U2U, context, ...}
+    def insertWeightWithID(self, uid, dict):
         # SQL query
-        self.cursor.executemany('INSERT INTO weight(user_id, R2R, U2R, U2U, context, R2R_distance, R2R_price, R2R_ordering, R2R_cuisine, '
-                                'U2R_TFIDF, U2R_price, U2R_ordering, U2R_cuisine, U2U_tag, U2U_price, U2U_ordering, U2U_cuisine, '
-                                'context_1, context_2, context_3, context_4) VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, '
-                                '%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)', list)
+        self.cursor.execute('INSERT INTO weight(user_id, ' + ', '.join(dict.keys()) + ') VALUES(%s, ' + ', '.join(['%s'] * len(dict)) + ')',
+                            ((uid, ) + tuple(dict.values())))
 
     # 傳回使用者最新的權重
     def getWeightWithID(self, uid):
