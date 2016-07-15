@@ -377,11 +377,11 @@ class DBConn:
         return dict
 
     # 傳回使用者的帳號
-    def getUserAccountWithID(self, uid):
+    def getUserIdWithAccount(self, uid):
         # SQL query
-        self.cursor.execute('SELECT account FROM userInfo WHERE user_id = %s', uid)
-
-        return self.cursor.fetchall()[0][0]
+        self.cursor.execute('SELECT user_id FROM userInfo WHERE account = %s', uid)
+        data = self.cursor.fetchall()
+        return data[0][0] if len(data) > 0 else None
 
     # 修改使用者的price屬性
     def updateUserPriceWithID(self, uid, price_id, value):

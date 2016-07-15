@@ -162,7 +162,12 @@ def register():
         return resp
     conn.open()
     user_id = conn.insertUserInfo(req['name'], req['gender'], req['fb_id'], '')
-    conn.insertWeightWithID(user_id, {'R2R_cuisine': 0.265, 'context_3': 0.292, 'R2R_ordering': 0.288, 'U2U_ordering': 0.322, 'U2U_tag': 0.235, 'context_2': 0.25, 'R2R_price': 0.187, 'R2R': 0.344, 'context_1': 0.173, 'U2R_TFIDF': 0.173, 'R2R_distance': 0.26, 'U2U_cuisine': 0.159, 'U2U': 0.292, 'U2U_price': 0.284, 'U2R_ordering': 0.214, 'context_4': 0.285, 'U2R': 0.3, 'U2R_cuisine': 0.369, 'context': 0.064, 'U2R_price': 0.244}
+    conn.insertWeightWithID(user_id,
+                            {'R2R_cuisine': 0.265, 'context_3': 0.292, 'R2R_ordering': 0.288, 'U2U_ordering': 0.322,
+                             'U2U_tag': 0.235, 'context_2': 0.25, 'R2R_price': 0.187, 'R2R': 0.344, 'context_1': 0.173,
+                             'U2R_TFIDF': 0.173, 'R2R_distance': 0.26, 'U2U_cuisine': 0.159, 'U2U': 0.292,
+                             'U2U_price': 0.284, 'U2R_ordering': 0.214, 'context_4': 0.285, 'U2R': 0.3,
+                             'U2R_cuisine': 0.369, 'context': 0.064, 'U2R_price': 0.244}
 
                             )
 
@@ -190,7 +195,22 @@ def register():
 
 @application.route('/test', methods=['POST'])
 def test_fb_registered():
-    raise NotImplementedError
+    req = request.get_json()
+    missing = check_missing(req, ['fb_id'])
+    if missing:  # 如果缺少欄位，回傳400錯誤。
+        js = json.dumps({'message': 'Missing field(s): ' + ', '.join(missing)})
+        resp = Response(js, status=400, mimetype='application/json')
+        return resp
+    conn.open()
+    user_id = conn.getUserIdWithAccount(req['fb_id'])
+    conn.close()
+    if not user_id:
+        js = json.dumps({'message': 'FB account is not registered'})
+        resp = Response(js, status=404, mimetype='application/json')
+        return resp
+    else:
+        js = json.dumps({'user_id': user_id}, ensure_ascii=False)
+        return Response(js, status=200, mimetype='application/json')
 
 
 def check_missing(actual, expect_fields):
