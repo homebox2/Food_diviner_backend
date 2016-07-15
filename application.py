@@ -222,7 +222,7 @@ def handle_405(error):
 
 @application.errorhandler(404)
 def handle_404(error):
-    js = json.dumps({'message': 'Method not allowed'})
+    js = json.dumps({'message': 'Method not defined'})
     resp = Response(js, status=404, mimetype='application/json')
     return resp
 
