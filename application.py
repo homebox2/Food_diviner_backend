@@ -1,7 +1,7 @@
 import json
 from datetime import datetime
 
-from flask import Flask, request, Response
+from flask import Flask, request, Response, abort
 
 from db import DBConn
 
@@ -126,12 +126,12 @@ def collect_restaurant(user_id):
 
 @application.route('/users/<user_id>/ratings', methods=['POST'])
 def post_user_ratings(user_id):
-    raise NotImplementedError
+    abort(501)
 
 
 @application.route('/user_choose', methods=['POST'])
 def post_choice():
-    raise NotImplementedError
+    abort(501)
 
 
 @application.route('/restaurants/<restaurant_id>/ratings')
@@ -141,7 +141,7 @@ def get_restaurant_ratings(restaurant_id):
     :param restaurant_id: 指定餐廳的id。
     :return: 平均評價及各tag的數量。
     """
-    raise NotImplementedError
+    abort(501)
 
 
 @application.route('/signup', methods=['POST'])
@@ -211,6 +211,26 @@ def test_fb_registered():
     else:
         js = json.dumps({'user_id': user_id}, ensure_ascii=False)
         return Response(js, status=200, mimetype='application/json')
+
+
+@application.errorhandler(405)
+def handle_405(error):
+    js = json.dumps({'message': 'Method not allowed'})
+    resp = Response(js, status=405, mimetype='application/json')
+    return resp
+
+
+@application.errorhandler(404)
+def handle_404(error):
+    js = json.dumps({'message': 'Method not allowed'})
+    resp = Response(js, status=404, mimetype='application/json')
+    return resp
+
+
+@application.errorhandler(501)
+def handle_501(error):
+    resp = Response(json.dumps({'message': 'Method not implemented'}), status=501, mimetype='application/json')
+    return resp
 
 
 def check_missing(actual, expect_fields):
