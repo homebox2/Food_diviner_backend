@@ -1,9 +1,9 @@
 import json
+import logging
 from datetime import datetime
 
 from flask import Flask, request, Response, abort
-import logging
-from logging.handlers import SysLogHandler
+
 from db import DBConn
 
 DEFAULT_RECENT_RESTAURANT_NUM = 3
@@ -192,10 +192,12 @@ def register():
     if missing:  # 如果缺少欄位，回傳400錯誤。
         js = json.dumps({'message': 'Missing field(s): ' + ', '.join(missing)})
         resp = Response(js, status=400, mimetype='application/json')
+        logging.debug("400: " + str(req))
         return resp
     if req['gender'] != 'M' and req['gender'] != 'F':
         js = json.dumps({'message': 'Invalid gender: %s' % req['gender']})
         resp = Response(js, status=400, mimetype='application/json')
+        logging.debug("400: " + str(req))
         return resp
     conn.open()
     user_id = conn.insertUserInfo(req['name'], req['gender'], req['fb_id'], '')
@@ -237,6 +239,7 @@ def test_fb_registered():
     if missing:  # 如果缺少欄位，回傳400錯誤。
         js = json.dumps({'message': 'Missing field(s): ' + ', '.join(missing)})
         resp = Response(js, status=400, mimetype='application/json')
+        logging.debug("400: " + str(req))
         return resp
     conn.open()
     user_id = conn.getUserIdWithAccount(req['fb_id'])
@@ -244,6 +247,7 @@ def test_fb_registered():
     if not user_id:
         js = json.dumps({'message': 'FB account is not registered'})
         resp = Response(js, status=404, mimetype='application/json')
+        logging.debug("404: " + str(req))
         return resp
     else:
         js = json.dumps({'user_id': user_id}, ensure_ascii=False)
@@ -261,18 +265,21 @@ def handle_405(error):
 def handle_404(error):
     js = json.dumps({'message': 'Method not defined'})
     resp = Response(js, status=404, mimetype='application/json')
+    logging.debug("404: " + str(request.get_json()))
     return resp
 
 
 @application.errorhandler(501)
 def handle_501(error):
     resp = Response(json.dumps({'message': 'Method not implemented'}), status=501, mimetype='application/json')
+    logging.debug("501: " + str(request.get_json()))
     return resp
 
 
 @application.errorhandler(500)
 def handle_500(error):
     resp = Response(json.dumps({'message': 'Unknown error'}), status=500, mimetype='application/json')
+    logging.debug("500: " + str(request.get_json()))
     return resp
 
 
@@ -291,8 +298,7 @@ def check_missing(actual, expect_fields):
 
 
 if __name__ == '__main__':
-    handler = SysLogHandler()
-    handler.setLevel(logging.DEBUG)
+    logging.basicConfig(filename='error.log', level=logging.DEBUG)
+
     application.debug = True
-    application.logger.addHandler(handler)
     application.run()
