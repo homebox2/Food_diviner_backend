@@ -2,7 +2,8 @@ import json
 from datetime import datetime
 
 from flask import Flask, request, Response, abort
-
+import logging
+from logging.handlers import SysLogHandler
 from db import DBConn
 
 DEFAULT_RECENT_RESTAURANT_NUM = 3
@@ -131,7 +132,43 @@ def post_user_ratings(user_id):
 
 @application.route('/user_choose', methods=['POST'])
 def post_choice():
-    abort(501)
+    req = request.get_json()
+    missing = check_missing(req, ['user_id', 'restaurant_id', 'decision', 'run'])
+    if missing:
+        req = json.dumps({'message': 'Missing field(s): ' + ', '.join(missing)})
+        resp = Response(req, status=400, mimetype='application/json')
+        return resp
+    if req['decision'] != 'accept' or req['decision'] != 'decline':
+        req = json.dumps({'message': 'Invalid decision: %s' % req['decision']})
+        resp = Response(req, status=400, mimetype='application/json')
+        return resp
+
+    if req['run'] <= 0:
+        req = json.dumps({'message': 'Invalid run: %d' % req['run']})
+        resp = Response(req, status=400, mimetype='application/json')
+        return resp
+    conn.open()
+    conn.insertUserActivity(req['user_id'], req['restaurant_id'], req['run'], 1 if req['decision'] == 'accept' else -1)
+
+    user_avg = conn.getUserAverage()
+    user_ratio = conn.getUserRatio(req['user_id'])  # 取得使用者在價格、菜式、點菜方式各項屬性接受的比例。
+    user_model = {}
+
+    n = 0  # TODO: 依照目前使用者做過的決定來計算w
+    w = 0.4 - (n - 5) / 5 * 0.1 if n < 45 else 0
+
+    for name, values in user_ratio.items():
+        model = []
+        avg_values = user_avg[name]
+        for idx, value in enumerate(values):
+            """為避免前期使用者接受過的餐廳數量不足而出現極端值，在前期將平均值乘以較高的權重來平衡這個數值。"""
+            model.append(value * w + avg_values[idx] * (1 - w))
+        user_model[name] = model
+
+    conn.insertUserModelWithID(req['user_id'], user_model['price'], user_model['ordering'], user_model['cuisine'])
+
+    conn.close()
+    return Response(status=200)
 
 
 @application.route('/restaurants/<restaurant_id>/ratings')
@@ -233,6 +270,12 @@ def handle_501(error):
     return resp
 
 
+@application.errorhandler(500)
+def handle_500(error):
+    resp = Response(json.dumps({'message': 'Unknown error'}), status=500, mimetype='application/json')
+    return resp
+
+
 def check_missing(actual, expect_fields):
     """
     檢查收到的請求欄位是否完整。
@@ -248,5 +291,8 @@ def check_missing(actual, expect_fields):
 
 
 if __name__ == '__main__':
+    handler = SysLogHandler()
+    handler.setLevel(logging.DEBUG)
     application.debug = True
+    application.logger.addHandler(handler)
     application.run()
