@@ -211,7 +211,7 @@ def register():
                             )
 
     for rid, result in req['user_trial'].items():
-        conn.insertUserActivity(user_id, eval(rid), 0, 1 if result else -1)  # 第0 run就接受或拒絕代表初始問題。
+        conn.insertUserActivity(user_id, eval(rid), 0, 1 if result == 1 else -1)  # 第0 run就接受或拒絕代表初始問題。
 
     user_avg = conn.getUserAverage()
     user_ratio = conn.getUserRatio(user_id)  # 取得使用者在價格、菜式、點菜方式各項屬性接受的比例。
