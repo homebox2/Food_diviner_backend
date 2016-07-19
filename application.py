@@ -1,5 +1,5 @@
 import json
-import logging
+
 from datetime import datetime
 
 from flask import Flask, request, Response, abort
@@ -135,17 +135,17 @@ def post_choice():
     req = request.get_json()
     missing = check_missing(req, ['user_id', 'restaurant_id', 'decision', 'run'])
     if missing:
-        req = json.dumps({'message': 'Missing field(s): ' + ', '.join(missing)})
-        resp = Response(req, status=400, mimetype='application/json')
+        js = json.dumps({'message': 'Missing field(s): ' + ', '.join(missing)})
+        resp = Response(js, status=400, mimetype='application/json')
         return resp
-    if req['decision'] != 'accept' or req['decision'] != 'decline':
-        req = json.dumps({'message': 'Invalid decision: %s' % req['decision']})
-        resp = Response(req, status=400, mimetype='application/json')
+    if req['decision'] != 'accept' and req['decision'] != 'decline':
+        js = json.dumps({'message': 'Invalid decision: %s' % req['decision']})
+        resp = Response(js, status=400, mimetype='application/json')
         return resp
 
     if req['run'] <= 0:
-        req = json.dumps({'message': 'Invalid run: %d' % req['run']})
-        resp = Response(req, status=400, mimetype='application/json')
+        js = json.dumps({'message': 'Invalid run: %d' % req['run']})
+        resp = Response(js, status=400, mimetype='application/json')
         return resp
     conn.open()
     conn.insertUserActivity(req['user_id'], req['restaurant_id'], req['run'], 1 if req['decision'] == 'accept' else -1)
@@ -192,12 +192,10 @@ def register():
     if missing:  # 如果缺少欄位，回傳400錯誤。
         js = json.dumps({'message': 'Missing field(s): ' + ', '.join(missing)})
         resp = Response(js, status=400, mimetype='application/json')
-        logging.debug("400: " + str(req))
         return resp
     if req['gender'] != 'M' and req['gender'] != 'F':
         js = json.dumps({'message': 'Invalid gender: %s' % req['gender']})
         resp = Response(js, status=400, mimetype='application/json')
-        logging.debug("400: " + str(req))
         return resp
     conn.open()
     user_id = conn.insertUserInfo(req['name'], req['gender'], req['fb_id'], '')
@@ -239,7 +237,6 @@ def test_fb_registered():
     if missing:  # 如果缺少欄位，回傳400錯誤。
         js = json.dumps({'message': 'Missing field(s): ' + ', '.join(missing)})
         resp = Response(js, status=400, mimetype='application/json')
-        logging.debug("400: " + str(req))
         return resp
     conn.open()
     user_id = conn.getUserIdWithAccount(req['fb_id'])
@@ -247,7 +244,6 @@ def test_fb_registered():
     if not user_id:
         js = json.dumps({'message': 'FB account is not registered'})
         resp = Response(js, status=404, mimetype='application/json')
-        logging.debug("404: " + str(req))
         return resp
     else:
         js = json.dumps({'user_id': user_id}, ensure_ascii=False)
@@ -265,21 +261,18 @@ def handle_405(error):
 def handle_404(error):
     js = json.dumps({'message': 'Method not defined'})
     resp = Response(js, status=404, mimetype='application/json')
-    logging.debug("404: " + str(request.get_json()))
     return resp
 
 
 @application.errorhandler(501)
 def handle_501(error):
     resp = Response(json.dumps({'message': 'Method not implemented'}), status=501, mimetype='application/json')
-    logging.debug("501: " + str(request.get_json()))
     return resp
 
 
 @application.errorhandler(500)
 def handle_500(error):
     resp = Response(json.dumps({'message': 'Unknown error'}), status=500, mimetype='application/json')
-    logging.debug("500: " + str(request.get_json()))
     return resp
 
 
@@ -298,7 +291,5 @@ def check_missing(actual, expect_fields):
 
 
 if __name__ == '__main__':
-    logging.basicConfig(filename='error.log', level=logging.DEBUG)
-
     application.debug = True
-    application.run()
+    application.run(host='0.0.0.0')
