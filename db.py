@@ -39,7 +39,7 @@ class DBConn:
                             "(SELECT GROUP_CONCAT(has ORDER BY price_id SEPARATOR '') FROM restaurantPrice P WHERE P.restaurant_id = I.restaurant_id), "
                             "(SELECT GROUP_CONCAT(has ORDER BY ordering_id SEPARATOR '') FROM restaurantOrdering O WHERE O.restaurant_id = I.restaurant_id), "
                             "(SELECT GROUP_CONCAT(has ORDER BY cuisine_id SEPARATOR '') FROM restaurantCuisine C WHERE C.restaurant_id = I.restaurant_id), "
-                            "scenario, special, phone, hours2, remark, "
+                            "scenario, special, phone, hours1, remark, "
                             "(SELECT GROUP_CONCAT(DISTINCT tag) FROM tags T WHERE T.restaurant_id = I.restaurant_id) FROM restaurantInfo I ORDER BY restaurant_id")
         result = self.cursor.fetchall()
 
@@ -95,7 +95,7 @@ class DBConn:
                             "(SELECT GROUP_CONCAT(has ORDER BY price_id SEPARATOR '') FROM restaurantPrice P WHERE P.restaurant_id = I.restaurant_id), "
                             "(SELECT GROUP_CONCAT(has ORDER BY ordering_id SEPARATOR '') FROM restaurantOrdering O WHERE O.restaurant_id = I.restaurant_id), "
                             "(SELECT GROUP_CONCAT(has ORDER BY cuisine_id SEPARATOR '') FROM restaurantCuisine C WHERE C.restaurant_id = I.restaurant_id), "
-                            "hours2, (SELECT GROUP_CONCAT(DISTINCT tag) FROM tags T WHERE T.restaurant_id = I.restaurant_id) "
+                            "hours1, (SELECT GROUP_CONCAT(DISTINCT tag) FROM tags T WHERE T.restaurant_id = I.restaurant_id) "
                             "FROM restaurantInfo I ORDER BY restaurant_id")
         result = self.cursor.fetchall()
 
@@ -135,7 +135,7 @@ class DBConn:
                             "(SELECT GROUP_CONCAT(has ORDER BY price_id SEPARATOR '') FROM restaurantPrice P WHERE P.restaurant_id = I.restaurant_id), "
                             "(SELECT GROUP_CONCAT(has ORDER BY ordering_id SEPARATOR '') FROM restaurantOrdering O WHERE O.restaurant_id = I.restaurant_id), "
                             "(SELECT GROUP_CONCAT(has ORDER BY cuisine_id SEPARATOR '') FROM restaurantCuisine C WHERE C.restaurant_id = I.restaurant_id), "
-                            "hours2, (SELECT GROUP_CONCAT(DISTINCT tag) FROM tags T WHERE T.restaurant_id = I.restaurant_id) "
+                            "hours1, (SELECT GROUP_CONCAT(DISTINCT tag) FROM tags T WHERE T.restaurant_id = I.restaurant_id) "
                             "FROM restaurantInfo I WHERE restaurant_id = %s", rid)
 
         # DB回傳的結果為空(rid錯誤)
@@ -377,11 +377,11 @@ class DBConn:
         return dict
 
     # 傳回使用者的帳號
-    def getUserIdWithAccount(self, uid):
+    def getUserAccountWithID(self, uid):
         # SQL query
-        self.cursor.execute('SELECT user_id FROM userInfo WHERE account = %s', uid)
-        data = self.cursor.fetchall()
-        return data[0][0] if len(data) > 0 else None
+        self.cursor.execute('SELECT account FROM userInfo WHERE user_id = %s', uid)
+
+        return self.cursor.fetchall()[0][0]
 
     # 修改使用者的price屬性
     def updateUserPriceWithID(self, uid, price_id, value):
@@ -420,7 +420,7 @@ class DBConn:
             self.cursor.execute('INSERT INTO userActivity(user_id, restaurant_id, run, result) VALUES(%s, %s, %s, %s)', (uid, rid, run, result))
 
     # 傳回使用者最後n個接受的餐廳
-    def getUserActivity(self, uid, n):
+    def getUserActivityAcceptWithID(self, uid, n):
         # SQL query
         self.cursor.execute('SELECT restaurant_id FROM userActivity WHERE user_id = %s AND result = 1 ORDER BY timestamp DESC LIMIT %s', (uid, n))
 
@@ -429,6 +429,13 @@ class DBConn:
             return []
 
         return [x[0] for x in self.cursor.fetchall()]
+
+    # 傳回使用者接受和拒絕的餐廳數量
+    def getUserActivityCountWithID(self, uid):
+        # SQL query
+        self.cursor.execute('SELECT COUNT(*) FROM userActivity WHERE user_id = %s AND (result = 1 OR result = -1)', (uid))
+
+        return self.cursor.fetchall()[0][0]
 
     # 新增/更新使用者的各項分數
     def insertUserModelWithID(self, uid, price, ordering, cuisine):
