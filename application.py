@@ -40,7 +40,7 @@ def get_recommendation(user_id):
     u2u_sim = {}
 
     for u, s in similar_users.items():  # 使用者間的相似度
-        user_recent = conn.getUserActivity(u, DEFAULT_SIM_USER_RESTAURANT_NUM)  # 相近的使用者最近去過的餐廳。
+        user_recent = conn.getUserActivityAcceptWithID(u, DEFAULT_SIM_USER_RESTAURANT_NUM)  # 相近的使用者最近去過的餐廳。
         for r in user_recent:
             if r in u2u_sim:
                 u2u_sim[r] += s
@@ -53,7 +53,7 @@ def get_recommendation(user_id):
 
     print("figure out u2u ", datetime.now())
     # 找出和使用者最近去過的餐廳相似的餐廳。
-    recent_restaurants = conn.getUserActivity(user_id, DEFAULT_RECENT_RESTAURANT_NUM)
+    recent_restaurants = conn.getUserActivityAcceptWithID(user_id, DEFAULT_RECENT_RESTAURANT_NUM)
     r2r_sim = {}
     for recent in recent_restaurants:
         sim = conn.getR2RSimilarities(recent)
