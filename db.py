@@ -19,6 +19,7 @@ class DBConn:
         self.dbname = 'datawar_warofdata1'
         '''
 
+
     # 建立連線
     def open(self):
         self.db = pymysql.connect(self.host, self.user, self.passwd, self.dbname, charset='utf8')
@@ -310,8 +311,15 @@ class DBConn:
         # SQL query
         self.cursor.execute('INSERT INTO userInfo(name, gender, account, password) VALUES(%s, %s, %s, %s)', (name, gender, account, password))
 
+        uid = self.cursor.lastrowid
+
+        # 初始化userPrice, userOrdering, userCuisine
+        self.cursor.execute('INSERT INTO userPrice(user_id, price_id, has) VALUES' + ', '.join(['(%s, ' + str(id) + ', 0)' for id in range(1, 6)]) + ';'
+                            'INSERT INTO userOrdering(user_id, ordering_id, has) VALUES' + ', '.join(['(%s, ' + str(id) + ', 0)' for id in range(1, 6)]) + ';'
+                            'INSERT INTO userCuisine(user_id, cuisine_id, has) VALUES' + ', '.join(['(%s, ' + str(id) + ', 0)' for id in range(1, 11)]) + ';',
+                            ((uid, ) * 20))
         # 回傳他的uid
-        return self.cursor.lastrowid
+        return uid
 
     # 傳回所有使用者的資訊
     def getUsersInfo(self):
