@@ -11,7 +11,9 @@ def cos(u, v):
     """
      計算兩個向量的夾角。
     """
-    return dot(u, v) / (norm(u) * norm(v))
+    norm_u = norm(u)
+    norm_v = norm(v)
+    return dot(u, v) / (norm_u * norm_v) if norm_u != 0 and norm_v != 0 else 0
 
 
 def similarity(a, b, sim_matrix=None):
