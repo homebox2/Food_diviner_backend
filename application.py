@@ -272,7 +272,7 @@ def test_fb_registered():
         resp = Response(js, status=400, mimetype='application/json')
         return resp
     conn.open()
-    user_id = conn.getUserIdWithAccount(req['fb_id'])
+    user_id = conn.getUserIDWithAccount(req['fb_id'])
     conn.close()
     if not user_id:
         js = json.dumps({'message': 'FB account is not registered'})
