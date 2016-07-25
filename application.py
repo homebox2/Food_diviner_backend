@@ -5,6 +5,7 @@ from datetime import datetime
 from flask import Flask, request, Response, abort
 
 from db import DBConn
+from pymysql import IntegrityError
 
 DEFAULT_RECENT_RESTAURANT_NUM = 3
 DEFAULT_SIM_USER_NUM = 3
@@ -198,36 +199,57 @@ def register():
         resp = Response(js, status=400, mimetype='application/json')
         return resp
     conn.open()
-    user_id = conn.insertUserInfo(req['name'], req['gender'], req['fb_id'], '')
-    conn.insertWeightWithID(user_id,
-                            {'R2R_cuisine': 0.265, 'context_3': 0.292, 'R2R_ordering': 0.288, 'U2U_ordering': 0.322,
-                             'U2U_tag': 0.235, 'context_2': 0.25, 'R2R_price': 0.187, 'R2R': 0.344, 'context_1': 0.173,
-                             'U2R_TFIDF': 0.173, 'R2R_distance': 0.26, 'U2U_cuisine': 0.159, 'U2U': 0.292,
-                             'U2U_price': 0.284, 'U2R_ordering': 0.214, 'context_4': 0.285, 'U2R': 0.3,
-                             'U2R_cuisine': 0.369, 'context': 0.064, 'U2R_price': 0.244}
+    try:
+        user_id = conn.insertUserInfo(req['name'], req['gender'], req['fb_id'], '')
+        init_weight = {'R2R_cuisine': 0.265, 'context_3': 0.292, 'R2R_ordering': 0.288, 'U2U_ordering': 0.322,
+                       'U2U_tag': 0.235, 'context_2': 0.25, 'R2R_price': 0.187, 'R2R': 0.344,
+                       'context_1': 0.173,
+                       'U2R_TFIDF': 0.173, 'R2R_distance': 0.26, 'U2U_cuisine': 0.159, 'U2U': 0.292,
+                       'U2U_price': 0.284, 'U2R_ordering': 0.214, 'context_4': 0.285, 'U2R': 0.3,
+                       'U2R_cuisine': 0.369, 'context': 0.064, 'U2R_price': 0.244}
+        conn.insertWeightWithID(user_id, init_weight)
 
-                            )
+        for rid, result in req['user_trial'].items():
+            conn.insertUserActivity(user_id, eval(rid), 0, 1 if result == 1 else -1)  # 第0 run就接受或拒絕代表初始問題。
 
-    for rid, result in req['user_trial'].items():
-        conn.insertUserActivity(user_id, eval(rid), 0, 1 if result == 1 else -1)  # 第0 run就接受或拒絕代表初始問題。
+        user_avg = conn.getUserAverage()
+        user_ratio = conn.getUserRatio(user_id)  # 取得使用者在價格、菜式、點菜方式各項屬性接受的比例。
+        user_model = {}
+        w = 0.4
+        for name, values in user_ratio.items():
+            model = []
+            avg_values = user_avg[name]
+            for idx, value in enumerate(values):
+                """為避免前期使用者接受過的餐廳數量不足而出現極端值，在前期將平均值乘以較高的權重來平衡這個數值。"""
+                model.append(value * w + avg_values[idx] * (1 - w))
+            user_model[name] = model
 
-    user_avg = conn.getUserAverage()
-    user_ratio = conn.getUserRatio(user_id)  # 取得使用者在價格、菜式、點菜方式各項屬性接受的比例。
-    user_model = {}
-    w = 0.4
-    for name, values in user_ratio.items():
-        model = []
-        avg_values = user_avg[name]
-        for idx, value in enumerate(values):
-            """為避免前期使用者接受過的餐廳數量不足而出現極端值，在前期將平均值乘以較高的權重來平衡這個數值。"""
-            model.append(value * w + avg_values[idx] * (1 - w))
-        user_model[name] = model
+        conn.insertUserModelWithID(user_id, user_model['price'], user_model['ordering'], user_model['cuisine'])
 
-    conn.insertUserModelWithID(user_id, user_model['price'], user_model['ordering'], user_model['cuisine'])
-    conn.close()
-    js = json.dumps({'user_id': user_id}, ensure_ascii=False)
+        users = conn.getUsersInfo()
+        this_user = conn.getUserInfoWithID(user_id)
+        from u2u import calc_u2u
 
-    return Response(js, status=200, mimetype='application/json')
+        u2u_weight = {
+            "tag": init_weight['U2U_tag'],
+            "price": init_weight['U2U_price'],
+            "cuisine": init_weight['U2U_cuisine'],
+            "ordering": init_weight['U2U_ordering']
+        }
+        u2u_similarities = []
+        for user in users:
+            u2u_similarities.append((user['uid'], user_id, calc_u2u(this_user, user, u2u_weight)))
+        print("update u2u", u2u_similarities)
+        conn.updateU2USimilarities(u2u_similarities)
+        js = json.dumps({'user_id': user_id}, ensure_ascii=False)
+
+        return Response(js, status=200, mimetype='application/json')
+    except IntegrityError:
+        js = json.dumps({'message': 'FB account %s has been registered' % req['fb_id']})
+        resp = Response(js, status=409, mimetype='application/json')
+        return resp
+    finally:
+        conn.close()
 
 
 @application.route('/test', methods=['POST'])
