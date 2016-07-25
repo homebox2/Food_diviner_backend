@@ -1,5 +1,6 @@
 from similarity import *
 
+
 # WEIGHT_TAG = 0.25
 # WEIGHT_PRICE = 0.25
 # WEIGHT_ORDERING = 0.25
@@ -57,13 +58,21 @@ if __name__ == '__main__':
     conn.open()  # output similarity
     users_info = conn.getUsersInfo()
     num = len(users_info)
+
     similarities = []
+    u2u_weights = {
+        'price': 0.25,
+        'ordering': 0.25,
+        'cuisine': 0.25,
+        'tag': 0.25
+    }
     for i, user1 in enumerate(users_info):
+        weights = conn.getWeightWithID(user1['uid'])
         for j in range(i, num):
             user2 = users_info[j]
-            sim = calc_u2u(user1, user2)
+            sim = calc_u2u(user1, user2, u2u_weights)
             sim = sim if user1['uid'] != user2['uid'] else 1
-            similarities.append((user1['uid'], user2['uid'], sim))
+            similarities.append((user1['uid'], user2['uid'], float(sim)))
 
     conn.updateU2USimilarities(similarities)
     conn.close()
