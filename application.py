@@ -26,6 +26,17 @@ def get_recommendation(user_id):
         'cuisine': weights['U2R_cuisine'],
         'tfidf': weights['U2R_TFIDF']
     }
+    req = request.get_json()
+
+    if req and 'advance' in req and req['advance']:
+        missing = check_missing(req, ['prefer_prices', 'weather', 'transport', 'lat', 'lng'])
+        if missing:
+            js = json.dumps({'message': 'Missing field(s): ' + ', '.join(missing)})
+            resp = Response(js, status=400, mimetype='application/json')
+            return resp
+
+
+
 
     WEIGHT_CONTEXT = 0.25
 
@@ -48,7 +59,7 @@ def get_recommendation(user_id):
             else:
                 u2u_sim[r] = s
 
-    for r, s in u2u_sim:
+    for r, s in u2u_sim.items():
         # 正規化餐廳分數並乘以u2u的權重。
         scores[r] += s / DEFAULT_SIM_USER_NUM * weights['U2U']
 
