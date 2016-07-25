@@ -623,7 +623,7 @@ class DBConn:
 
     # 新增/更新多筆R2R的相似度 list:[(rid1, rid2, sim), ...] rid1 < rid2
     def updateR2RSimilarities(self, list):
-        param = [x + (x[2],) for x in list]
+        param = [((x[1], x[0]) if x[0] > x[1] else (x[0], x[1])) + (x[2], x[2], ) for x in list]
 
         # SQL query
         self.cursor.executemany('INSERT INTO R2RSimilarity(restaurant_id1, restaurant_id2, similarity) VALUES(%s, %s, %s) '
@@ -712,7 +712,7 @@ class DBConn:
 
     # 新增/更新多筆U2U的相似度 list:[(uid1, uid2, sim), ...] uid1 < uid2
     def updateU2USimilarities(self, list):
-        param = [x + (x[2],) for x in list]
+        param = [((x[1], x[0]) if x[0] > x[1] else (x[0], x[1])) + (x[2], x[2], ) for x in list]
 
         # SQL query
         self.cursor.executemany('INSERT INTO U2USimilarity(user_id1, user_id2, similarity) VALUES(%s, %s, %s) '
