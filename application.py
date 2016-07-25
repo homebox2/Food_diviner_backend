@@ -238,7 +238,7 @@ def register():
         }
         u2u_similarities = []
         for user in users:
-            u2u_similarities.append((user['uid'], user_id, calc_u2u(this_user, user, u2u_weight)))
+            u2u_similarities.append((user['uid'], user_id, float(calc_u2u(this_user, user, u2u_weight))))
         print("update u2u", u2u_similarities)
         conn.updateU2USimilarities(u2u_similarities)
         js = json.dumps({'user_id': user_id}, ensure_ascii=False)
