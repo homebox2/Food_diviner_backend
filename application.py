@@ -107,6 +107,9 @@ def get_recommendation(user_id):
         restaurant['tags'].extend(restaurant['remark'])
         restaurant['tags'].extend(restaurant['special'])
         restaurant['restaurant_id'] = restaurant['rid']
+        del restaurant['rid']
+        del restaurant['remark']
+        del restaurant['special']
 
     js = json.dumps(recommendations, ensure_ascii=False)
 
