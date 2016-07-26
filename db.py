@@ -37,15 +37,15 @@ class DBConn:
     def getRestaurantsAll(self):
         #SQL query
         self.cursor.execute("SELECT restaurant_id, name, address, "
-                            "(SELECT GROUP_CONCAT(has ORDER BY price_id SEPARATOR '') FROM restaurantPrice P WHERE P.restaurant_id = I.restaurant_id), "
-                            "(SELECT GROUP_CONCAT(has ORDER BY ordering_id SEPARATOR '') FROM restaurantOrdering O WHERE O.restaurant_id = I.restaurant_id), "
-                            "(SELECT GROUP_CONCAT(has ORDER BY cuisine_id SEPARATOR '') FROM restaurantCuisine C WHERE C.restaurant_id = I.restaurant_id), "
+                            "(SELECT GROUP_CONCAT(has ORDER BY price_id) FROM restaurantPrice P WHERE P.restaurant_id = I.restaurant_id), "
+                            "(SELECT GROUP_CONCAT(has ORDER BY ordering_id) FROM restaurantOrdering O WHERE O.restaurant_id = I.restaurant_id), "
+                            "(SELECT GROUP_CONCAT(has ORDER BY cuisine_id) FROM restaurantCuisine C WHERE C.restaurant_id = I.restaurant_id), "
                             "scenario, special, phone, hours1, remark, "
                             "(SELECT GROUP_CONCAT(DISTINCT tag) FROM tags T WHERE T.restaurant_id = I.restaurant_id) FROM restaurantInfo I ORDER BY restaurant_id")
         result = self.cursor.fetchall()
 
         # 宣告空list
-        list = []
+        lists = []
 
         for record in result:
             # ┌─────┬──────┬─────────┬─────────┬──────────┬─────────┬──────────┬─────────┬───────┬────────┬────────┐
@@ -56,13 +56,13 @@ class DBConn:
             # 電話、營業時間有可能為空值(NULL), DB會回傳None
 
             # [0~100, 100~200, 200~300, 300~500, 500~]
-            price = [int(x) for x in record[3]]
+            price = list(literal_eval(record[3]))
 
             # [單點, 吃到飽, 套餐, 合菜, 簡餐]
-            ordering = [int(x) for x in record[4]]
+            ordering = list(literal_eval(record[4]))
 
             # [中式料理, 日式料理, 韓式料理, 泰式料理, 異國料理, 燒烤, 鍋類, 小吃, 便當, 冰品、甜點、下午茶]
-            cuisine = [int(x) for x in record[5]]
+            cuisine = list(literal_eval(record[5]))
 
             # ['用餐情境', ...]
             scenario = literal_eval(record[6])
@@ -84,35 +84,35 @@ class DBConn:
                     'scenario': scenario, 'special': special, 'phone': record[8], 'hours': hours, 'remark': remark, 'tags': tags}
 
             # 把每筆資料存到list
-            list.append(dict)
+            lists.append(dict)
 
         # 回傳
-        return list
+        return lists
 
     # 傳回餐廳的數值化資料: ID, 價格, 點菜方式, 菜式, 營業時間
     def getRestaurantsNum(self):
         # SQL query
         self.cursor.execute("SELECT restaurant_id, "
-                            "(SELECT GROUP_CONCAT(has ORDER BY price_id SEPARATOR '') FROM restaurantPrice P WHERE P.restaurant_id = I.restaurant_id), "
-                            "(SELECT GROUP_CONCAT(has ORDER BY ordering_id SEPARATOR '') FROM restaurantOrdering O WHERE O.restaurant_id = I.restaurant_id), "
-                            "(SELECT GROUP_CONCAT(has ORDER BY cuisine_id SEPARATOR '') FROM restaurantCuisine C WHERE C.restaurant_id = I.restaurant_id), "
+                            "(SELECT GROUP_CONCAT(has ORDER BY price_id) FROM restaurantPrice P WHERE P.restaurant_id = I.restaurant_id), "
+                            "(SELECT GROUP_CONCAT(has ORDER BY ordering_id) FROM restaurantOrdering O WHERE O.restaurant_id = I.restaurant_id), "
+                            "(SELECT GROUP_CONCAT(has ORDER BY cuisine_id) FROM restaurantCuisine C WHERE C.restaurant_id = I.restaurant_id), "
                             "hours1, (SELECT GROUP_CONCAT(DISTINCT tag) FROM tags T WHERE T.restaurant_id = I.restaurant_id) "
                             "FROM restaurantInfo I ORDER BY restaurant_id")
         result = self.cursor.fetchall()
 
         # 宣告空list
-        list = []
+        lists = []
 
         for record in result:
 
             # [0~100, 100~200, 200~300, 300~500, 500~]
-            price = [int(x) for x in record[1]]
+            price = list(literal_eval(record[1]))
 
             # [單點, 吃到飽, 套餐, 合菜, 簡餐]
-            ordering = [int(x) for x in record[2]]
+            ordering = list(literal_eval(record[2]))
 
             # [中式料理, 日式料理, 韓式料理, 泰式料理, 異國料理, 燒烤, 鍋類, 小吃, 便當, 冰品、甜點、下午茶]
-            cuisine = [int(x) for x in record[3]]
+            cuisine = list(literal_eval(record[3]))
 
             # {星期幾: ['開門時間~關門時間', ...], ...}
             hours = literal_eval(record[4]) if record[4] is not None else None
@@ -124,18 +124,18 @@ class DBConn:
             dict = {'rid': record[0], 'price': price, 'ordering': ordering, 'cuisine': cuisine, 'hours': hours, 'tags': tags}
 
             # 把每筆資料存到list
-            list.append(dict)
+            lists.append(dict)
 
         # 回傳
-        return list
+        return lists
 
     # 傳回指定餐廳的數值化資料: 價格, 點菜方式, 菜式, 營業時間
     def getRestaurantNumWithID(self, rid):
         # SQL query
         self.cursor.execute("SELECT restaurant_id, "
-                            "(SELECT GROUP_CONCAT(has ORDER BY price_id SEPARATOR '') FROM restaurantPrice P WHERE P.restaurant_id = I.restaurant_id), "
-                            "(SELECT GROUP_CONCAT(has ORDER BY ordering_id SEPARATOR '') FROM restaurantOrdering O WHERE O.restaurant_id = I.restaurant_id), "
-                            "(SELECT GROUP_CONCAT(has ORDER BY cuisine_id SEPARATOR '') FROM restaurantCuisine C WHERE C.restaurant_id = I.restaurant_id), "
+                            "(SELECT GROUP_CONCAT(has ORDER BY price_id) FROM restaurantPrice P WHERE P.restaurant_id = I.restaurant_id), "
+                            "(SELECT GROUP_CONCAT(has ORDER BY ordering_id) FROM restaurantOrdering O WHERE O.restaurant_id = I.restaurant_id), "
+                            "(SELECT GROUP_CONCAT(has ORDER BY cuisine_id) FROM restaurantCuisine C WHERE C.restaurant_id = I.restaurant_id), "
                             "hours1, (SELECT GROUP_CONCAT(DISTINCT tag) FROM tags T WHERE T.restaurant_id = I.restaurant_id) "
                             "FROM restaurantInfo I WHERE restaurant_id = %s", rid)
 
@@ -146,13 +146,13 @@ class DBConn:
         record = self.cursor.fetchall()[0]
 
         # [0~100, 100~200, 200~300, 300~500, 500~]
-        price = [int(x) for x in record[1]]
+        price = list(literal_eval(record[1]))
 
         # [單點, 吃到飽, 套餐, 合菜, 簡餐]
-        ordering = [int(x) for x in record[2]]
+        ordering = list(literal_eval(record[2]))
 
         # [中式料理, 日式料理, 韓式料理, 泰式料理, 異國料理, 燒烤, 鍋類, 小吃, 便當, 冰品、甜點、下午茶]
-        cuisine = [int(x) for x in record[3]]
+        cuisine = list(literal_eval(record[3]))
 
         # {星期幾: ['開門時間~關門時間', ...], ...}
         hours = literal_eval(record[4]) if record[4] is not None else None
@@ -325,23 +325,23 @@ class DBConn:
     def getUsersInfo(self):
         # SQL query price ordering cuisine
         self.cursor.execute("SELECT user_id, name, gender, account, password, "
-                            "(SELECT GROUP_CONCAT(has ORDER BY price_id SEPARATOR '') FROM userPrice P WHERE P.user_id = I.user_id), "
-                            "(SELECT GROUP_CONCAT(has ORDER BY ordering_id SEPARATOR '') FROM userOrdering O WHERE O.user_id = I.user_id), "
-                            "(SELECT GROUP_CONCAT(has ORDER BY cuisine_id SEPARATOR '') FROM userCuisine C WHERE C.user_id = I.user_id), "
+                            "(SELECT GROUP_CONCAT(has ORDER BY price_id) FROM userPrice P WHERE P.user_id = I.user_id), "
+                            "(SELECT GROUP_CONCAT(has ORDER BY ordering_id) FROM userOrdering O WHERE O.user_id = I.user_id), "
+                            "(SELECT GROUP_CONCAT(has ORDER BY cuisine_id) FROM userCuisine C WHERE C.user_id = I.user_id), "
                             "(SELECT GROUP_CONCAT(DISTINCT tag) FROM tags T WHERE T.user_id = I.user_id) "
                             "FROM userInfo I ORDER BY user_id")
         result = self.cursor.fetchall()
 
         # 宣告空list
-        list = []
+        lists = []
 
         for record in result:
 
-            price = [int(x) for x in record[5]]
+            price = list(literal_eval(record[5]))
 
-            ordering = [int(x) for x in record[6]]
+            ordering = list(literal_eval(record[6]))
 
-            cuisine = [int(x) for x in record[7]]
+            cuisine = list(literal_eval(record[7]))
 
             tags = [x for x in record[8].split(',')] if record[8] is not None else []
 
@@ -350,17 +350,17 @@ class DBConn:
                     'price': price, 'ordering': ordering, 'cuisine': cuisine, 'tags': tags}
 
             # 把每筆資料存到list
-            list.append(dict)
+            lists.append(dict)
 
-        return list
+        return lists
 
     # 傳回使用者的基本資訊
     def getUserInfoWithID(self, uid):
         # SQL query price ordering cuisine
         self.cursor.execute("SELECT user_id, name, gender, account, password, "
-                            "(SELECT GROUP_CONCAT(has ORDER BY price_id SEPARATOR '') FROM userPrice P WHERE P.user_id = I.user_id), "
-                            "(SELECT GROUP_CONCAT(has ORDER BY ordering_id SEPARATOR '') FROM userOrdering O WHERE O.user_id = I.user_id), "
-                            "(SELECT GROUP_CONCAT(has ORDER BY cuisine_id SEPARATOR '') FROM userCuisine C WHERE C.user_id = I.user_id), "
+                            "(SELECT GROUP_CONCAT(has ORDER BY price_id) FROM userPrice P WHERE P.user_id = I.user_id), "
+                            "(SELECT GROUP_CONCAT(has ORDER BY ordering_id) FROM userOrdering O WHERE O.user_id = I.user_id), "
+                            "(SELECT GROUP_CONCAT(has ORDER BY cuisine_id) FROM userCuisine C WHERE C.user_id = I.user_id), "
                             "(SELECT GROUP_CONCAT(DISTINCT tag) FROM tags T WHERE T.user_id = I.user_id) "
                             "FROM userInfo I WHERE user_id = %s", uid)
 
@@ -370,11 +370,11 @@ class DBConn:
 
         record = self.cursor.fetchall()[0]
 
-        price = [int(x) for x in record[5]]
+        price = list(literal_eval(record[5]))
 
-        ordering = [int(x) for x in record[6]]
+        ordering = list(literal_eval(record[6]))
 
-        cuisine = [int(x) for x in record[7]]
+        cuisine = list(literal_eval(record[7]))
 
         tags = [x for x in record[8].split(',')] if record[8] is not None else []
 
