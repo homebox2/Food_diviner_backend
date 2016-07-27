@@ -3,6 +3,7 @@ import json
 from datetime import datetime
 
 from flask import Flask, request, Response, abort
+from werkzeug.contrib.cache import SimpleCache
 
 from db import DBConn
 from pymysql import IntegrityError
@@ -13,6 +14,7 @@ DEFAULT_SIM_USER_RESTAURANT_NUM = 5
 application = Flask(__name__)
 
 conn = DBConn()
+cache = SimpleCache()
 
 
 @application.route("/users/<user_id>/recommendation")
@@ -35,18 +37,17 @@ def get_recommendation(user_id):
             resp = Response(js, status=400, mimetype='application/json')
             return resp
 
-
-
-
     WEIGHT_CONTEXT = 0.25
 
     conn.open()
     user = conn.getUserInfoWithID(user_id)
-    restaurants = conn.getRestaurantsInfo()
+    restaurants = {r['rid']: r for r in conn.getRestaurantsInfo()}  # 將餐廳陣列轉換為以rid為key的dict。
     print("get request ", datetime.now())
+
     scores = {}
-    for restaurant in restaurants:
-        scores[restaurant['rid']] = 0  # 初始化每個餐廳的分數。
+    for rid in restaurants.keys():
+        scores[rid] = 0  # 初始化每個餐廳的分數。
+
     print("init restaurant scores ", datetime.now())
     similar_users = conn.getU2USimilarities(user_id, DEFAULT_SIM_USER_NUM)
     u2u_sim = {}
@@ -96,11 +97,19 @@ def get_recommendation(user_id):
     recommendations = []
 
     import operator
-    sorted_scores = dict(sorted(scores.items(), key=operator.itemgetter(1), reverse=True)[:10])  # 依照分數排序前十名餐廳。
+    sorted_scores = sorted(scores.items(), key=operator.itemgetter(1), reverse=True)  # 依照分數排序前十名餐廳。
+    print("sorted", sorted_scores)
 
-    for restaurant in restaurants:
-        if restaurant['rid'] in sorted_scores:
-            recommendations.append(restaurant)
+    # 將在推薦名單中的餐廳資訊放入list。
+    counter = 0
+    for rid, score in sorted_scores:
+        key = str(user_id) + "-" + str(rid)
+        dummy = cache.get(key)  # 利用暫存來紀錄最近被接受或拒絕過的結果，避免重複推薦。
+        if not dummy:
+            recommendations.append(restaurants[rid])
+            counter += 1
+            if counter >= 10:
+                break
 
     # Alter column name.
     for restaurant in recommendations:
@@ -169,7 +178,7 @@ def post_choice():
     user_ratio = conn.getUserRatio(req['user_id'])  # 取得使用者在價格、菜式、點菜方式各項屬性接受的比例。
     user_model = {}
 
-    n = 0  # TODO: 依照目前使用者做過的決定來計算w
+    n = conn.getUserActivityCountWithID(req['user_id'])
     w = 0.4 - (n - 5) / 5 * 0.1 if n < 45 else 0
 
     for name, values in user_ratio.items():
@@ -182,6 +191,11 @@ def post_choice():
 
     conn.insertUserModelWithID(req['user_id'], user_model['price'], user_model['ordering'], user_model['cuisine'])
 
+    key = str(req['user_id']) + "-" + str(req['restaurant_id'])
+    if req['decision'] == 'accept':  # 將使用者接受的餐廳1天不推薦
+        cache.set(key, "recommended", 86400)
+    else:  # 拒絕的餐廳三天不推薦
+        cache.set(key, "recommended", 345600)
     conn.close()
     return Response(status=200)
 
