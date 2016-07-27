@@ -435,7 +435,7 @@ class DBConn:
                                 'INSERT INTO userCollection(user_id, restaurant_id) VALUES(%s, %s) '
                                 'ON DUPLICATE KEY UPDATE timestamp = NOW()', (uid, rid, run, result, uid, rid))
         # 拒絕
-        elif result == 0:
+        elif result == -1:
             self.cursor.execute('INSERT INTO userActivity(user_id, restaurant_id, run, result) VALUES(%s, %s, %s, %s)', (uid, rid, run, result))
 
     # 傳回使用者最後n個接受的餐廳
