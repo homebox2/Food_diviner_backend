@@ -87,6 +87,7 @@ def get_recommendation(user_id):
     matches = {}
     from r2u import calc_r2u
     for restaurant in restaurants_num:
+        # TODO 把user各項count做
         matches[restaurant['rid']] = calc_r2u(user, restaurant, tfidf[restaurant['rid']], r2u_weights)
 
     for r, s in matches.items():
@@ -227,14 +228,30 @@ def register():
         resp = Response(js, status=400, mimetype='application/json')
         return resp
     conn.open()
+    init_weight = {
+        'R2R': 0.25,
+        'U2R': 0.25,
+        'U2U': 0.25,
+        'context': 0.25,
+        'R2R_cuisine': 0.35,
+        'R2R_ordering': 0.15,
+        'R2R_price': 0.3,
+        'R2R_distance': 0.2,
+        'context_1': 0.25,
+        'context_2': 0.25,
+        'context_3': 0.25,
+        'context_4': 0.25,
+        'U2U_ordering': 0.25,
+        'U2U_tag': 0.25,
+        'U2U_price': 0.25,
+        'U2U_cuisine': 0.25,
+        'U2R_TFIDF': 0.25,
+        'U2R_ordering': 0.25,
+        'U2R_cuisine': 0.25,
+        'U2R_price': 0.25
+    }
     try:
         user_id = conn.insertUserInfo(req['name'], req['gender'], req['fb_id'], '')
-        init_weight = {'R2R_cuisine': 0.265, 'context_3': 0.292, 'R2R_ordering': 0.288, 'U2U_ordering': 0.322,
-                       'U2U_tag': 0.235, 'context_2': 0.25, 'R2R_price': 0.187, 'R2R': 0.344,
-                       'context_1': 0.173,
-                       'U2R_TFIDF': 0.173, 'R2R_distance': 0.26, 'U2U_cuisine': 0.159, 'U2U': 0.292,
-                       'U2U_price': 0.284, 'U2R_ordering': 0.214, 'context_4': 0.285, 'U2R': 0.3,
-                       'U2R_cuisine': 0.369, 'context': 0.064, 'U2R_price': 0.244}
         conn.insertWeightWithID(user_id, init_weight)
 
         for rid, result in req['user_trial'].items():
