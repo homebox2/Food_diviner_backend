@@ -552,6 +552,36 @@ class DBConn:
 
         return {'price': list(literal_eval(record[0])), 'ordering': list(literal_eval(record[1])), 'cuisine': list(literal_eval(record[2]))}
 
+    # 新增使用者的進階搜尋
+    def insertUserAdvanceWithID(self, uid, price, weather, transport, lat, lng):
+
+        price = str(price)
+
+        # SQL query
+        self.cursor.execute('INSERT INTO userAdvance(user_id, prefer_price, weather, transport, lat, lng) VALUES(%s, %s, %s, %s, %s, %s)',
+                            (uid, price, weather, transport, lat, lng))
+
+    # 傳回使用者最近n次的進階搜尋
+    def getUserAdvanceWithID(self, uid, n):
+        # SQL query
+        self.cursor.execute('SELECT * FROM userAdvance WHERE user_id = %s ORDER BY timestamp DESC LIMIT %s', (uid, n))
+
+        result = self.cursor.fetchall()
+
+        # 宣告空list
+        lists = []
+
+        for record in result:
+
+            # 每筆資料用dict存
+            dict = {'uid': record[1], 'price': list(literal_eval(record[2])), 'weather': record[3], 'transport': record[4],
+                    'lat': record[5], 'lng': record[6]}
+
+            lists.append(dict)
+
+        return lists
+
+
     # ========== TAG ==========
     # 新增tag(type: 1喜歡 -1討厭)
     def insertTagWithID(self, uid, rid, tag, type):
