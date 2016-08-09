@@ -321,7 +321,8 @@ def test_fb_registered():
 @application.route('/images/<image_id>')
 def get_image(image_id):
     dir_path = './images'
-    return send_from_directory(dir_path, "test.png")
+
+    return send_from_directory(dir_path, "hello_world.jpg")
 
 
 @application.errorhandler(405)
