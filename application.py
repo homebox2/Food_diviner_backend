@@ -1,8 +1,9 @@
 import json
+import os
 
 from datetime import datetime
 
-from flask import Flask, request, Response, abort
+from flask import Flask, request, Response, abort, send_from_directory
 from werkzeug.contrib.cache import SimpleCache
 
 from db import DBConn
@@ -315,6 +316,12 @@ def test_fb_registered():
     else:
         js = json.dumps({'user_id': user_id}, ensure_ascii=False)
         return Response(js, status=200, mimetype='application/json')
+
+
+@application.route('/images/<image_id>')
+def get_image(image_id):
+    dir_path = './images'
+    return send_from_directory(dir_path, "test.png")
 
 
 @application.errorhandler(405)
