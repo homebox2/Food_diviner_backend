@@ -37,11 +37,14 @@ def get_recommendation(user_id):
             js = json.dumps({'message': 'Missing field(s): ' + ', '.join(missing)})
             resp = Response(js, status=400, mimetype='application/json')
             return resp
+        conn.insertUserAdvanceWithID(user_id,req["prefer_prices"],req["weather"],req["transport"],req["lat"],req["lng"])
 
     WEIGHT_CONTEXT = 0.25
 
     conn.open()
     user = conn.getUserInfoWithID(user_id)
+    if req and 'advance' in req and req['advance']:
+        user["price"] = req["prefer_prices"]
     restaurants = {r['rid']: r for r in conn.getRestaurantsInfo()}  # 將餐廳陣列轉換為以rid為key的dict。
     print("get request ", datetime.now())
 
