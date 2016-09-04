@@ -44,7 +44,7 @@ def get_recommendation(user_id):
     conn.open()
     user = conn.getUserInfoWithID(user_id)
     if req and 'advance' in req and req['advance']:
-        user["price"] = req["prefer_prices"]
+        user["price"] = req["prefer_prices"]  # advance 啟動時覆蓋掉原本user的price
     restaurants = {r['rid']: r for r in conn.getRestaurantsInfo()}  # 將餐廳陣列轉換為以rid為key的dict。
     print("get request ", datetime.now())
 
@@ -124,6 +124,10 @@ def get_recommendation(user_id):
         del restaurant['rid']
         del restaurant['remark']
         del restaurant['special']
+        # 增加 image 資料
+        import glob
+        image_list = glob.glob("./images/"+str(restaurant["restaurant_id"])+"/*.*")
+        restaurant["image"] = [x[-6:-4] for x in image_list]
 
     js = json.dumps(recommendations, ensure_ascii=False)
 
