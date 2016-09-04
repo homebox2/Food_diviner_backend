@@ -37,7 +37,8 @@ def get_recommendation(user_id):
             js = json.dumps({'message': 'Missing field(s): ' + ', '.join(missing)})
             resp = Response(js, status=400, mimetype='application/json')
             return resp
-        conn.insertUserAdvanceWithID(user_id,req["prefer_prices"],req["weather"],req["transport"],req["lat"],req["lng"])
+        conn.insertUserAdvanceWithID(user_id, req["prefer_prices"], req["weather"], req["transport"], req["lat"],
+                                     req["lng"])
 
     WEIGHT_CONTEXT = 0.25
 
@@ -330,6 +331,17 @@ def get_image(image_id):
     dir_path = './images'
 
     return send_from_directory(dir_path, "hello_world.jpg")
+
+
+@application.route('/users/<user_id>/caches', methods=['DELETE'])
+def invalidate(user_id):
+
+    conn.open()
+    for r in conn.getRestaurantsNum():
+        cache.delete("-".join([user_id, str(r['rid'])]))
+    conn.close()
+    js = json.dumps({'success': True})
+    return Response(js, status=200, mimetype='application/json')
 
 
 @application.errorhandler(405)
