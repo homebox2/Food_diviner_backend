@@ -128,7 +128,7 @@ def get_recommendation(user_id):
         # 增加 image 資料
         import glob
         image_list = glob.glob("./images/"+str(restaurant["restaurant_id"])+"/*.*")
-        restaurant["image"] = [x[-6:-4] for x in image_list]
+        restaurant["image"] = [str(restaurant['restaurant_id'])+"_"+x[-6:-4] for x in image_list]
 
     js = json.dumps(recommendations, ensure_ascii=False)
 
