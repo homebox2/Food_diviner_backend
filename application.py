@@ -328,10 +328,13 @@ def test_fb_registered():
 
 @application.route('/images/<image_id>')
 def get_image(image_id):
-    dir_path = './images'
+    image_path = image_id.split("_")
+    dir_path = './images/'+str(image_path[0])
 
-    return send_from_directory(dir_path, "hello_world.jpg")
-
+    try:
+        return send_from_directory(dir_path, image_path[1]+".jpg")
+    except:
+        return send_from_directory(dir_path, image_path[1]+".png")
 
 @application.route('/users/<user_id>/caches', methods=['DELETE'])
 def invalidate(user_id):
