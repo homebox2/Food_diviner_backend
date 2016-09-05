@@ -127,8 +127,8 @@ def get_recommendation(user_id):
         del restaurant['special']
         # 增加 image 資料
         import glob
-        image_list = glob.glob("./images/"+str(restaurant["restaurant_id"])+"/*.*")
-        restaurant["image"] = [str(restaurant['restaurant_id'])+"_"+x[-6:-4] for x in image_list]
+        image_list = glob.glob("./images/" + str(restaurant["restaurant_id"]) + "/*.*")
+        restaurant["image"] = [str(restaurant['restaurant_id']) + "_" + x[-6:-4] for x in image_list]
 
     js = json.dumps(recommendations, ensure_ascii=False)
 
@@ -161,7 +161,22 @@ def collect_restaurant(user_id):
 
 @application.route('/users/<user_id>/ratings', methods=['POST'])
 def post_user_ratings(user_id):
-    abort(501)
+    req = request.get_json()
+
+    # NOTE: 暫時不檢查rating
+    missing = check_missing(req, ['restaurant_id', "tags"])
+    if missing:
+        js = json.dumps({'message': 'Missing field(s): ' + ', '.join(missing)})
+        resp = Response(js, status=400, mimetype='application/json')
+        return resp
+
+    conn.open()
+
+    for k, v in req['tags'].items():
+        conn.insertTagWithID(user_id, req['restaurant_id'], k, v)
+
+    conn.close()
+    return Response(status=200)
 
 
 @application.route('/user_choose', methods=['POST'])
@@ -329,16 +344,16 @@ def test_fb_registered():
 @application.route('/images/<image_id>')
 def get_image(image_id):
     image_path = image_id.split("_")
-    dir_path = './images/'+str(image_path[0])
+    dir_path = './images/' + str(image_path[0])
 
     try:
-        return send_from_directory(dir_path, image_path[1]+".jpg")
+        return send_from_directory(dir_path, image_path[1] + ".jpg")
     except:
-        return send_from_directory(dir_path, image_path[1]+".png")
+        return send_from_directory(dir_path, image_path[1] + ".png")
+
 
 @application.route('/users/<user_id>/caches', methods=['DELETE'])
 def invalidate(user_id):
-
     conn.open()
     for r in conn.getRestaurantsNum():
         cache.delete("-".join([user_id, str(r['rid'])]))
