@@ -28,3 +28,9 @@ venv
 *.pyc
 build
 .idea/*
+
+# ignore eb files
+.elasticbeanstalk/
+
+# ignore cache files
+__pycache__/
