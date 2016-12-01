@@ -1,6 +1,6 @@
+# -*- coding: utf8 -*-
 import json
-import os
-
+from errorhandler import *
 from datetime import datetime
 
 from flask import Flask, request, Response, abort, send_from_directory
@@ -17,6 +17,10 @@ application = Flask(__name__)
 conn = DBConn()
 cache = SimpleCache()
 
+@application.route("/")
+def welcome_message():
+    mes = json.dumps({"message":"Hello! welcome to food_diviner API server."},indent=4)
+    return Response(mes, status=200, mimetype='application/json')
 
 @application.route("/users/<user_id>/recommendation")
 def get_recommendation(user_id):
@@ -130,7 +134,7 @@ def get_recommendation(user_id):
         image_list = glob.glob("./images/" + str(restaurant["restaurant_id"]) + "/*.*")
         restaurant["image"] = [str(restaurant['restaurant_id']) + "_" + x[-6:-4] for x in image_list]
 
-    js = json.dumps(recommendations, ensure_ascii=False)
+    js = json.dumps(recommendations, ensure_ascii=False, indent=4)
 
     resp = Response(js, status=200, mimetype='application/json')
 
@@ -360,32 +364,6 @@ def invalidate(user_id):
     conn.close()
     js = json.dumps({'success': True})
     return Response(js, status=200, mimetype='application/json')
-
-
-@application.errorhandler(405)
-def handle_405(error):
-    js = json.dumps({'message': 'Method not allowed'})
-    resp = Response(js, status=405, mimetype='application/json')
-    return resp
-
-
-@application.errorhandler(404)
-def handle_404(error):
-    js = json.dumps({'message': 'Method not defined'})
-    resp = Response(js, status=404, mimetype='application/json')
-    return resp
-
-
-@application.errorhandler(501)
-def handle_501(error):
-    resp = Response(json.dumps({'message': 'Method not implemented'}), status=501, mimetype='application/json')
-    return resp
-
-
-@application.errorhandler(500)
-def handle_500(error):
-    resp = Response(json.dumps({'message': 'Unknown error'}), status=500, mimetype='application/json')
-    return resp
 
 
 def check_missing(actual, expect_fields):
