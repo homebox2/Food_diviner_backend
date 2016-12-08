@@ -307,9 +307,9 @@ class DBConn:
 
     # ========== USER ==========
     # 新增使用者的基本資訊
-    def insertUserInfo(self, name, gender, account, password):
+    def insertUserInfo(self, name, gender, user_key, password):
         # SQL query
-        self.cursor.execute('INSERT INTO userInfo(name, gender, account, password) VALUES(%s, %s, %s, %s)', (name, gender, account, password))
+        self.cursor.execute('INSERT INTO userInfo(name, gender, user_key, password) VALUES(%s, %s, %s, %s)', (name, gender, user_key, password))
 
         uid = self.cursor.lastrowid
 
@@ -324,7 +324,7 @@ class DBConn:
     # 傳回所有使用者的資訊
     def getUsersInfo(self):
         # SQL query price ordering cuisine
-        self.cursor.execute("SELECT user_id, name, gender, account, password, "
+        self.cursor.execute("SELECT user_id, name, gender, user_key, password, "
                             "(SELECT GROUP_CONCAT(has ORDER BY price_id) FROM userPrice P WHERE P.user_id = I.user_id), "
                             "(SELECT GROUP_CONCAT(has ORDER BY ordering_id) FROM userOrdering O WHERE O.user_id = I.user_id), "
                             "(SELECT GROUP_CONCAT(has ORDER BY cuisine_id) FROM userCuisine C WHERE C.user_id = I.user_id), "
@@ -357,7 +357,7 @@ class DBConn:
     # 傳回使用者的基本資訊
     def getUserInfoWithID(self, uid):
         # SQL query price ordering cuisine
-        self.cursor.execute("SELECT user_id, name, gender, account, password, "
+        self.cursor.execute("SELECT user_id, name, gender, user_key, password, "
                             "(SELECT GROUP_CONCAT(has ORDER BY price_id) FROM userPrice P WHERE P.user_id = I.user_id), "
                             "(SELECT GROUP_CONCAT(has ORDER BY ordering_id) FROM userOrdering O WHERE O.user_id = I.user_id), "
                             "(SELECT GROUP_CONCAT(has ORDER BY cuisine_id) FROM userCuisine C WHERE C.user_id = I.user_id), "
@@ -385,16 +385,16 @@ class DBConn:
         return dict
 
     # 傳回使用者的帳號
-    def getUserAccountWithID(self, uid):
+    def getUserKeyWithID(self, uid):
         # SQL query
-        self.cursor.execute('SELECT account FROM userInfo WHERE user_id = %s', uid)
+        self.cursor.execute('SELECT user_key FROM userInfo WHERE user_id = %s', uid)
 
         return self.cursor.fetchall()[0][0]
 
     # 傳回使用者的ID
-    def getUserIDWithAccount(self, account):
+    def getUserIDWithUserKey(self, user_key):
         # SQL query
-        self.cursor.execute('SELECT user_id FROM userInfo WHERE account = %s', account)
+        self.cursor.execute('SELECT user_id FROM userInfo WHERE user_key = %s', user_key)
 
         # DB回傳的結果為空
         if self.cursor.rowcount == 0:
@@ -829,5 +829,26 @@ class DBConn:
                 'U2U_tag': record[14], 'U2U_price': record[15], 'U2U_ordering': record[16], 'U2U_cuisine': record[17],
                 'context_1': record[18], 'context_2': record[19], 'context_3': record[20], 'context_4': record[21]}
 
+
+    def deleteUserInfo(self, uid):
+        # db_uid = self.getUserIDWithUserKey(user_key)
+        # if db_uid == None:
+        #     return "Can not found user with this user_key"
+        # if db_uid != uid:
+        #     return "Wrong user_key or uid, don't play server!"
+        # else:
+        self.cursor.execute("DELETE FROM U2RWeight WHERE user_id = %s", uid)
+        self.cursor.execute("DELETE FROM U2USimilarity WHERE user_id1 = %s OR user_id2 = %s", (uid,uid) )
+        self.cursor.execute("DELETE FROM userActivity WHERE user_id = %s", uid )
+        self.cursor.execute("DELETE FROM userAdvance WHERE user_id = %s", uid )
+        self.cursor.execute("DELETE FROM userCollection WHERE user_id = %s", uid)
+        self.cursor.execute("DELETE FROM userCuisine WHERE user_id = %s", uid)
+        self.cursor.execute("DELETE FROM userModel WHERE user_id = %s", uid)
+        self.cursor.execute("DELETE FROM userOrdering WHERE user_id = %s", uid)
+        self.cursor.execute("DELETE FROM userPrice WHERE user_id = %s", uid)
+        self.cursor.execute("DELETE FROM weight WHERE user_id = %s", uid)
+        self.cursor.execute("DELETE FROM userInfo WHERE user_id = %s", uid)
+
+        return "delete UserInfo success!"
 # 常用的update? => executemany
 # timestamp? => which table?

@@ -22,12 +22,12 @@ def welcome_message():
     mes = json.dumps({"message":"Hello! welcome to food_diviner API server."},indent=4)
     return Response(mes, status=200, mimetype='application/json')
 
-@application.route("/users/<user_id>/recommendation")
+@application.route("/users/<user_id>/recommendation",methods=["POST"])
 def get_recommendation(user_id):
     conn.open()
 
     weights = conn.getWeightWithID(user_id)
-    r2u_weights = {
+    u2r_weights = {
         'price': weights['U2R_price'],
         'ordering': weights['U2R_ordering'],
         'cuisine': weights['U2R_cuisine'],
@@ -58,20 +58,20 @@ def get_recommendation(user_id):
         scores[rid] = 0  # 初始化每個餐廳的分數。
 
     print("init restaurant scores ", datetime.now())
+
     similar_users = conn.getU2USimilarities(user_id, DEFAULT_SIM_USER_NUM)
-    u2u_sim = {}
-
-    for u, s in similar_users.items():  # 使用者間的相似度
-        user_recent = conn.getUserActivityAcceptWithID(u, DEFAULT_SIM_USER_RESTAURANT_NUM)  # 相近的使用者最近去過的餐廳。
-        for r in user_recent:
-            if r in u2u_sim:
-                u2u_sim[r] += s
-            else:
-                u2u_sim[r] = s
-
-    for r, s in u2u_sim.items():
-        # 正規化餐廳分數並乘以u2u的權重。
-        scores[r] += s / DEFAULT_SIM_USER_NUM * weights['U2U']
+    if similar_users != -1: # 排除只有一個user情況
+        u2u_sim = {}
+        for u, s in similar_users.items():  # 使用者間的相似度
+            user_recent = conn.getUserActivityAcceptWithID(u, DEFAULT_SIM_USER_RESTAURANT_NUM)  # 相近的使用者最近去過的餐廳。
+            for r in user_recent:
+                if r in u2u_sim:
+                    u2u_sim[r] += s
+                else:
+                    u2u_sim[r] = s
+        for r, s in u2u_sim.items():
+            # 正規化餐廳分數並乘以u2u的權重。
+            scores[r] += s / DEFAULT_SIM_USER_NUM * weights['U2U']
 
     print("figure out u2u ", datetime.now())
     # 找出和使用者最近去過的餐廳相似的餐廳。
@@ -94,10 +94,10 @@ def get_recommendation(user_id):
     tfidf = conn.getTFIDFWithID(user_id)
 
     matches = {}
-    from r2u import calc_r2u
+    from u2r import calc_u2r
     for restaurant in restaurants_num:
         # TODO 把user各項count做
-        matches[restaurant['rid']] = calc_r2u(user, restaurant, tfidf[restaurant['rid']], r2u_weights)
+        matches[restaurant['rid']] = calc_u2r(user, restaurant, tfidf[restaurant['rid']], u2r_weights)
 
     for r, s in matches.items():
         scores[r] += s * weights['U2R']
@@ -246,7 +246,7 @@ def register():
     """
 
     req = request.get_json()
-    missing = check_missing(req, ['fb_id', 'user_trial', 'name', 'gender'])
+    missing = check_missing(req, ['user_key', 'user_trial', 'name', 'gender'])
     if missing:  # 如果缺少欄位，回傳400錯誤。
         js = json.dumps({'message': 'Missing field(s): ' + ', '.join(missing)})
         resp = Response(js, status=400, mimetype='application/json')
@@ -279,7 +279,7 @@ def register():
         'U2R_price': 0.25
     }
     try:
-        user_id = conn.insertUserInfo(req['name'], req['gender'], req['fb_id'], '')
+        user_id = conn.insertUserInfo(req['name'], req['gender'], req['user_key'], '')
         conn.insertWeightWithID(user_id, init_weight)
 
         for rid, result in req['user_trial'].items():
@@ -318,7 +318,7 @@ def register():
 
         return Response(js, status=200, mimetype='application/json')
     except IntegrityError:
-        js = json.dumps({'message': 'FB account %s has been registered' % req['fb_id']})
+        js = json.dumps({'message': 'This User_key %s has been registered' % req['user_key']})
         resp = Response(js, status=409, mimetype='application/json')
         return resp
     finally:
@@ -328,16 +328,16 @@ def register():
 @application.route('/test', methods=['POST'])
 def test_fb_registered():
     req = request.get_json()
-    missing = check_missing(req, ['fb_id'])
+    missing = check_missing(req, ['user_key'])
     if missing:  # 如果缺少欄位，回傳400錯誤。
         js = json.dumps({'message': 'Missing field(s): ' + ', '.join(missing)})
         resp = Response(js, status=400, mimetype='application/json')
         return resp
     conn.open()
-    user_id = conn.getUserIDWithAccount(req['fb_id'])
+    user_id = conn.getUserIDWithUserKey(req['user_key'])
     conn.close()
     if not user_id:
-        js = json.dumps({'message': 'FB account is not registered'})
+        js = json.dumps({'message': 'This account is not registered'})
         resp = Response(js, status=404, mimetype='application/json')
         return resp
     else:
@@ -365,6 +365,12 @@ def invalidate(user_id):
     js = json.dumps({'success': True})
     return Response(js, status=200, mimetype='application/json')
 
+@application.route('/users/<user_id>/delete', methods=['DELETE'])
+def deleteUser(user_id):
+    conn.open()
+    mes = conn.deleteUserInfo(user_id)
+    js = json.dumps({"message":mes})
+    return Response(js,status=200,mimetype='application/json')
 
 def check_missing(actual, expect_fields):
     """
