@@ -48,10 +48,10 @@ class DBConn:
         lists = []
 
         for record in result:
-            # ┌─────┬──────┬─────────┬─────────┬──────────┬─────────┬──────────┬─────────┬───────┬────────┬────────┐
-            # │ rid │ name │ address │ price   │ ordering │ cuisine │ scenario │ special │ phone │ hours  │ remark │
-            # │ 編號 │ 店名　│ 地址　　　│ 均價區間　│ 點菜方式　 │ 菜式　　　│ 用餐情境　 │ 招牌菜　　│ 電話　 │ 營業時間 │ 備註　  │
-            # └─────┴──────┴─────────┴─────────┴──────────┴─────────┴──────────┴─────────┴───────┴────────┴────────┘
+            # ┌───────────────┬──────┬─────────┬─────────┬──────────┬─────────┬──────────┬─────────┬───────┬────────┬────────┐
+            # │ restaurant_id │ name │ address │ price   │ ordering │ cuisine │ scenario │ special │ phone │ hours  │ remark │
+            # │ 編號           │ 店名　│ 地址　　　│ 均價區間　│ 點菜方式　 │ 菜式　　　│ 用餐情境　 │ 招牌菜　　│ 電話　 │ 營業時間 │ 備註　  │
+            # └───────────────┴──────┴─────────┴─────────┴──────────┴─────────┴──────────┴─────────┴───────┴────────┴────────┘
             # 字串格式為unicode
             # 電話、營業時間有可能為空值(NULL), DB會回傳None
 
@@ -80,7 +80,7 @@ class DBConn:
             tags = [x for x in record[11].split(',')] if record[11] is not None else []
 
             # 每筆資料用dict存
-            dict = {'rid': record[0], 'name': record[1], 'address': record[2], 'price': price, 'ordering': ordering, 'cuisine': cuisine,
+            dict = {'restaurant_id': record[0], 'name': record[1], 'address': record[2], 'price': price, 'ordering': ordering, 'cuisine': cuisine,
                     'scenario': scenario, 'special': special, 'phone': record[8], 'hours': hours, 'remark': remark, 'tags': tags}
 
             # 把每筆資料存到list
@@ -121,7 +121,7 @@ class DBConn:
             tags = [x for x in record[5].split(',')] if record[5] is not None else []
 
             # 每筆資料用dict存
-            dict = {'rid': record[0], 'price': price, 'ordering': ordering, 'cuisine': cuisine, 'hours': hours, 'tags': tags}
+            dict = {'restaurant_id': record[0], 'price': price, 'ordering': ordering, 'cuisine': cuisine, 'hours': hours, 'tags': tags}
 
             # 把每筆資料存到list
             lists.append(dict)
@@ -130,16 +130,16 @@ class DBConn:
         return lists
 
     # 傳回指定餐廳的數值化資料: 價格, 點菜方式, 菜式, 營業時間
-    def getRestaurantNumWithID(self, rid):
+    def getRestaurantNumWithID(self, restaurant_id):
         # SQL query
         self.cursor.execute("SELECT restaurant_id, "
                             "(SELECT GROUP_CONCAT(has ORDER BY price_id) FROM restaurantPrice P WHERE P.restaurant_id = I.restaurant_id), "
                             "(SELECT GROUP_CONCAT(has ORDER BY ordering_id) FROM restaurantOrdering O WHERE O.restaurant_id = I.restaurant_id), "
                             "(SELECT GROUP_CONCAT(has ORDER BY cuisine_id) FROM restaurantCuisine C WHERE C.restaurant_id = I.restaurant_id), "
                             "hours1, (SELECT GROUP_CONCAT(DISTINCT tag) FROM tags T WHERE T.restaurant_id = I.restaurant_id) "
-                            "FROM restaurantInfo I WHERE restaurant_id = %s", rid)
+                            "FROM restaurantInfo I WHERE restaurant_id = %s", restaurant_id)
 
-        # DB回傳的結果為空(rid錯誤)
+        # DB回傳的結果為空(restaurant_id錯誤)
         if self.cursor.rowcount == 0:
             return []
 
@@ -161,7 +161,7 @@ class DBConn:
         tags = [x for x in record[5].split(',')] if record[5] is not None else []
 
         # 每筆資料用dict存
-        dict = {'rid': record[0], 'price': price, 'ordering': ordering, 'cuisine': cuisine, 'hours': hours, 'tags': tags}
+        dict = {'restaurant_id': record[0], 'price': price, 'ordering': ordering, 'cuisine': cuisine, 'hours': hours, 'tags': tags}
 
         return dict
 
@@ -196,7 +196,7 @@ class DBConn:
             tags = [x for x in record[11].split(',')] if record[11] is not None else []
 
             # 每筆資料用dict存
-            dict = {'rid': record[0], 'name': record[1], 'address': record[2], 'price': record[3], 'ordering': ordering, 'cuisine': cuisine,
+            dict = {'restaurant_id': record[0], 'name': record[1], 'address': record[2], 'price': record[3], 'ordering': ordering, 'cuisine': cuisine,
                     'scenario': scenario, 'special': special, 'phone': record[8], 'hours': record[9], 'remark': remark, 'tags': tags}
 
             # 把每筆資料存到list
@@ -205,7 +205,7 @@ class DBConn:
         # 回傳
         return list
 
-    # 傳回多間餐廳的文字資訊 list:[rid1, rid2, ...]
+    # 傳回多間餐廳的文字資訊 list:[restaurant_id1, restaurant_id2, ...]
     def getRestaurantInfoWithIDs(self, list):
 
 
@@ -239,7 +239,7 @@ class DBConn:
             tags = [x for x in record[11].split(',')] if record[11] is not None else []
 
             # 每筆資料用dict存
-            dict = {'rid': record[0], 'name': record[1], 'address': record[2], 'price': record[3], 'ordering': ordering, 'cuisine': cuisine,
+            dict = {'restaurant_id': record[0], 'name': record[1], 'address': record[2], 'price': record[3], 'ordering': ordering, 'cuisine': cuisine,
                     'scenario': scenario, 'special': special, 'phone': record[8], 'hours': record[9], 'remark': remark, 'tags': tags}
 
             # 把每筆資料存到list
@@ -249,13 +249,13 @@ class DBConn:
         return list
 
     # 傳回餐廳的文字資訊
-    def getRestaurantInfoWithID(self, rid):
+    def getRestaurantInfoWithID(self, restaurant_id):
         # SQL query
         self.cursor.execute('SELECT restaurant_id, name, address, price, ordering, cuisine, scenario, special, phone, hours, remark, '
                             '(SELECT GROUP_CONCAT(DISTINCT tag) FROM tags T WHERE T.restaurant_id = I.restaurant_id) '
-                            'FROM restaurantInfo I WHERE restaurant_id = %s', rid)
+                            'FROM restaurantInfo I WHERE restaurant_id = %s', restaurant_id)
 
-        # DB回傳的結果為空(rid錯誤)
+        # DB回傳的結果為空(restaurant_id錯誤)
         if self.cursor.rowcount == 0:
             return []
 
@@ -280,25 +280,25 @@ class DBConn:
         tags = [x for x in record[11].split(',')] if record[11] is not None else []
 
         # 每筆資料用dict存
-        dict = {'rid': record[0], 'name': record[1], 'address': record[2], 'price': record[3], 'ordering': ordering, 'cuisine': cuisine,
+        dict = {'restaurant_id': record[0], 'name': record[1], 'address': record[2], 'price': record[3], 'ordering': ordering, 'cuisine': cuisine,
                 'scenario': scenario, 'special': special, 'phone': record[8], 'hours': record[9], 'remark': remark, 'tags': tags}
 
         return dict
 
     # 傳回兩間餐廳的距離
-    def getRestaurantDistance(self, rid1, rid2):
+    def getRestaurantDistance(self, restaurant_id1, restaurant_id2):
         # 同一間餐廳的距離為1
-        if rid1 == rid2:
+        if restaurant_id1 == restaurant_id2:
             return 1
 
-        # DB的儲存方式為rid1 < rid2
-        if rid1 > rid2:
-            rid1, rid2 = rid2, rid1
+        # DB的儲存方式為restaurant_id1 < restaurant_id2
+        if restaurant_id1 > restaurant_id2:
+            restaurant_id1, restaurant_id2 = restaurant_id2, restaurant_id1
 
         # SQL query
-        self.cursor.execute('SELECT distance FROM restaurantDistance WHERE restaurant_id1 = %s AND restaurant_id2 = %s', (rid1, rid2))
+        self.cursor.execute('SELECT distance FROM restaurantDistance WHERE restaurant_id1 = %s AND restaurant_id2 = %s', (restaurant_id1, restaurant_id2))
 
-        # DB回傳的結果為空(rid錯誤)
+        # DB回傳的結果為空(restaurant_id錯誤)
         if self.cursor.rowcount == 0:
             return -1
 
@@ -309,17 +309,23 @@ class DBConn:
     # 新增使用者的基本資訊
     def insertUserInfo(self, name, gender, user_key, password):
         # SQL query
-        self.cursor.execute('INSERT INTO userInfo(name, gender, user_key, password) VALUES(%s, %s, %s, %s)', (name, gender, user_key, password))
+        self.cursor.execute('INSERT INTO userInfo(name, gender, user_key, password) '
+                            'SELECT %s, %s, %s, %s FROM DUAL WHERE NOT EXISTS '
+                            '(SELECT * FROM userInfo WHERE user_key = %s)', (name, gender, user_key, password, user_key))
 
-        uid = self.cursor.lastrowid
+        user_id = self.cursor.lastrowid
 
-        # 初始化userPrice, userOrdering, userCuisine
-        self.cursor.execute('INSERT INTO userPrice(user_id, price_id, has) VALUES' + ', '.join(['(%s, ' + str(id) + ', 0)' for id in range(1, 6)]) + ';'
-                            'INSERT INTO userOrdering(user_id, ordering_id, has) VALUES' + ', '.join(['(%s, ' + str(id) + ', 0)' for id in range(1, 6)]) + ';'
-                            'INSERT INTO userCuisine(user_id, cuisine_id, has) VALUES' + ', '.join(['(%s, ' + str(id) + ', 0)' for id in range(1, 11)]) + ';',
-                            ((uid, ) * 20))
-        # 回傳他的uid
-        return uid
+        if user_id == 0:
+            return -1 #already exists
+        else:
+            # 初始化userPrice, userOrdering, userCuisine
+            self.cursor.execute('INSERT INTO userPrice(user_id, price_id, has) VALUES' + ', '.join(['(%s, ' + str(id) + ', 0)' for id in range(1, 6)]) + ';'
+                                'INSERT INTO userOrdering(user_id, ordering_id, has) VALUES' + ', '.join(['(%s, ' + str(id) + ', 0)' for id in range(1, 6)]) + ';'
+                                'INSERT INTO userCuisine(user_id, cuisine_id, has) VALUES' + ', '.join(['(%s, ' + str(id) + ', 0)' for id in range(1, 11)]) + ';',
+                                ((user_id, ) * 20))
+            # 回傳他的 user_id
+            return user_id
+
 
     # 傳回所有使用者的資訊
     def getUsersInfo(self):
@@ -346,7 +352,7 @@ class DBConn:
             tags = [x for x in record[8].split(',')] if record[8] is not None else []
 
             # 每筆資料用dict存
-            dict = {'uid': record[0], 'name': record[1], 'gender': record[2], 'account': record[3], 'password': record[4],
+            dict = {'user_id': record[0], 'name': record[1], 'gender': record[2], 'user_key': record[3], 'password': record[4],
                     'price': price, 'ordering': ordering, 'cuisine': cuisine, 'tags': tags}
 
             # 把每筆資料存到list
@@ -355,16 +361,16 @@ class DBConn:
         return lists
 
     # 傳回使用者的基本資訊
-    def getUserInfoWithID(self, uid):
+    def getUserInfoWithID(self, user_id):
         # SQL query price ordering cuisine
         self.cursor.execute("SELECT user_id, name, gender, user_key, password, "
                             "(SELECT GROUP_CONCAT(has ORDER BY price_id) FROM userPrice P WHERE P.user_id = I.user_id), "
                             "(SELECT GROUP_CONCAT(has ORDER BY ordering_id) FROM userOrdering O WHERE O.user_id = I.user_id), "
                             "(SELECT GROUP_CONCAT(has ORDER BY cuisine_id) FROM userCuisine C WHERE C.user_id = I.user_id), "
                             "(SELECT GROUP_CONCAT(DISTINCT tag) FROM tags T WHERE T.user_id = I.user_id) "
-                            "FROM userInfo I WHERE user_id = %s", uid)
+                            "FROM userInfo I WHERE user_id = %s", user_id)
 
-        # DB回傳的結果為空(rid錯誤)
+        # DB回傳的結果為空(user_id錯誤)
         if self.cursor.rowcount == 0:
             return []
 
@@ -379,15 +385,22 @@ class DBConn:
         tags = [x for x in record[8].split(',')] if record[8] is not None else []
 
         # 每筆資料用dict存
-        dict = {'uid': record[0], 'name': record[1], 'gender': record[2], 'account': record[3], 'password': record[4],
+        dict = {'user_id': record[0], 'name': record[1], 'gender': record[2], 'user_key': record[3], 'password': record[4],
                 'price': price, 'ordering': ordering, 'cuisine': cuisine, 'tags': tags}
 
         return dict
 
-    # 傳回使用者的帳號
-    def getUserKeyWithID(self, uid):
+    # 刪除使用者的基本資訊
+    def deleteUserInfo(self, user_id):
         # SQL query
-        self.cursor.execute('SELECT user_key FROM userInfo WHERE user_id = %s', uid)
+        self.cursor.execute("DELETE FROM userInfo WHERE user_id = %s", user_id)
+
+        return "delete UserInfo success!"
+
+    # 傳回使用者的帳號
+    def getUserKeyWithID(self, user_id):
+        # SQL query
+        self.cursor.execute('SELECT user_key FROM userInfo WHERE user_id = %s', user_id)
 
         return self.cursor.fetchall()[0][0]
 
@@ -403,22 +416,22 @@ class DBConn:
         return self.cursor.fetchall()[0][0]
 
     # 修改使用者的price屬性
-    def updateUserPriceWithID(self, uid, price_id, value):
+    def updateUserPriceWithID(self, user_id, price_id, value):
         # SQL query
-        self.cursor.execute('UPDATE userPrice SET has = has + %s WHERE user_id = %s AND price_id = %s', (value, uid, price_id))
+        self.cursor.execute('UPDATE userPrice SET has = has + %s WHERE user_id = %s AND price_id = %s', (value, user_id, price_id))
 
     # 修改使用者的ordering屬性
-    def updateUserOrderingWithID(self, uid, ordering_id, value):
+    def updateUserOrderingWithID(self, user_id, ordering_id, value):
         # SQL query
-        self.cursor.execute('UPDATE userOrdering SET has = has + %s WHERE user_id = %s AND ordering_id = %s', (value, uid, ordering_id))
+        self.cursor.execute('UPDATE userOrdering SET has = has + %s WHERE user_id = %s AND ordering_id = %s', (value, user_id, ordering_id))
 
     # 修改使用者的cuisine屬性
-    def updateUserCuisineWithID(self, uid, cuisine_id, value):
+    def updateUserCuisineWithID(self, user_id, cuisine_id, value):
         # SQL query
-        self.cursor.execute('UPDATE userCuisine SET has = has + %s WHERE user_id = %s AND cuisine_id = %s', (value, uid, cuisine_id))
+        self.cursor.execute('UPDATE userCuisine SET has = has + %s WHERE user_id = %s AND cuisine_id = %s', (value, user_id, cuisine_id))
 
     # 新增使用者的活動(run:第幾次 result:接受(1)、收藏(0)、拒絕(-1))
-    def insertUserActivity(self, uid, rid, run, result):
+    def insertUserActivity(self, user_id, restaurant_id, run, result):
         # 接受 price ordering cuisine增加
         if result == 1:
             self.cursor.execute('INSERT INTO userActivity(user_id, restaurant_id, run, result) VALUES(%s, %s, %s, %s);'
@@ -428,20 +441,20 @@ class DBConn:
                                 'SET A.has = A.has + B.has WHERE user_id = %s AND restaurant_id = %s;'
                                 'UPDATE userCuisine AS A INNER JOIN restaurantCuisine AS B USING(cuisine_id) '
                                 'SET A.has = A.has + B.has WHERE user_id = %s AND restaurant_id = %s;',
-                                (uid, rid, run, result, uid, rid, uid, rid, uid, rid))
+                                (user_id, restaurant_id, run, result, user_id, restaurant_id, user_id, restaurant_id, user_id, restaurant_id))
         # 收藏
         elif result == 0:
             self.cursor.execute('INSERT INTO userActivity(user_id, restaurant_id, run, result) VALUES(%s, %s, %s, %s);'
                                 'INSERT INTO userCollection(user_id, restaurant_id) VALUES(%s, %s) '
-                                'ON DUPLICATE KEY UPDATE timestamp = NOW()', (uid, rid, run, result, uid, rid))
+                                'ON DUPLICATE KEY UPDATE timestamp = NOW()', (user_id, restaurant_id, run, result, user_id, restaurant_id))
         # 拒絕
         elif result == -1:
-            self.cursor.execute('INSERT INTO userActivity(user_id, restaurant_id, run, result) VALUES(%s, %s, %s, %s)', (uid, rid, run, result))
+            self.cursor.execute('INSERT INTO userActivity(user_id, restaurant_id, run, result) VALUES(%s, %s, %s, %s)', (user_id, restaurant_id, run, result))
 
     # 傳回使用者最後n個接受的餐廳
-    def getUserActivityAcceptWithID(self, uid, n):
+    def getUserActivityAcceptWithID(self, user_id, n):
         # SQL query
-        self.cursor.execute('SELECT restaurant_id FROM userActivity WHERE user_id = %s AND result = 1 ORDER BY timestamp DESC LIMIT %s', (uid, n))
+        self.cursor.execute('SELECT restaurant_id FROM userActivity WHERE user_id = %s AND result = 1 ORDER BY timestamp DESC LIMIT %s', (user_id, n))
 
         # DB回傳的結果為空
         if self.cursor.rowcount == 0:
@@ -450,14 +463,14 @@ class DBConn:
         return [x[0] for x in self.cursor.fetchall()]
 
     # 傳回使用者接受和拒絕的餐廳數量
-    def getUserActivityCountWithID(self, uid):
+    def getUserActivityCountWithID(self, user_id):
         # SQL query
-        self.cursor.execute('SELECT COUNT(*) FROM userActivity WHERE user_id = %s AND (result = 1 OR result = -1)', (uid))
+        self.cursor.execute('SELECT COUNT(*) FROM userActivity WHERE user_id = %s AND (result = 1 OR result = -1)', (user_id))
 
         return self.cursor.fetchall()[0][0]
 
     # 新增/更新使用者的各項分數
-    def insertUserModelWithID(self, uid, price, ordering, cuisine):
+    def insertUserModelWithID(self, user_id, price, ordering, cuisine):
 
         priceStr = str(price)
         orderingStr = str(ordering)
@@ -465,12 +478,12 @@ class DBConn:
 
         # SQL query
         self.cursor.execute('INSERT INTO userModel(user_id, priceScore, orderingScore, cuisineScore) VALUES(%s, %s, %s, %s)',
-                            (uid, priceStr, orderingStr, cuisineStr))
+                            (user_id, priceStr, orderingStr, cuisineStr))
 
     # 傳回使用者最新的各項分數
-    def getUserModelWithID(self, uid):
+    def getUserModelWithID(self, user_id):
         # SQL query
-        self.cursor.execute('SELECT user_id, priceScore, orderingScore, cuisineScore FROM userModel WHERE user_id = %s ORDER BY timestamp DESC LIMIT 1', uid)
+        self.cursor.execute('SELECT user_id, priceScore, orderingScore, cuisineScore FROM userModel WHERE user_id = %s ORDER BY timestamp DESC LIMIT 1', user_id)
 
         record = self.cursor.fetchall()[0]
 
@@ -481,7 +494,7 @@ class DBConn:
         cuisine = literal_eval(record[3])
 
         # 每筆資料用dict存
-        dict = {'uid': record[0], 'priceScore': price, 'orderingScore': ordering, 'cuisineScore': cuisine}
+        dict = {'user_id': record[0], 'priceScore': price, 'orderingScore': ordering, 'cuisineScore': cuisine}
 
         return dict
 
@@ -505,14 +518,14 @@ class DBConn:
         return dict
 
     # 新增使用者收藏
-    def insertUserCollection(self, uid, rid):
+    def insertUserCollection(self, user_id, restaurant_id):
         self.cursor.execute('INSERT INTO userCollection(user_id, restaurant_id) VALUES(%s, %s) '
-                            'ON DUPLICATE KEY UPDATE timestamp = NOW()', (uid, rid))
+                            'ON DUPLICATE KEY UPDATE timestamp = NOW()', (user_id, restaurant_id))
 
     # 傳回使用者收藏的餐廳
-    def getUserCollection(self, uid):
+    def getUserCollection(self, user_id):
         # SQL query
-        self.cursor.execute('SELECT restaurant_id FROM userCollection WHERE user_id = %s', uid)
+        self.cursor.execute('SELECT restaurant_id FROM userCollection WHERE user_id = %s', user_id)
 
         # DB回傳的結果為空
         if self.cursor.rowcount == 0:
@@ -521,11 +534,11 @@ class DBConn:
         return [x[0] for x in self.cursor.fetchall()]
 
     # 刪除收藏
-    def deleteUserCollection(self, uid, rid):
+    def deleteUserCollection(self, user_id, restaurant_id):
         # SQL query
-        self.cursor.execute('DELETE FROM userCollection WHERE user_id = %s AND restaurant_id = %s', (uid, rid))
+        self.cursor.execute('DELETE FROM userCollection WHERE user_id = %s AND restaurant_id = %s', (user_id, restaurant_id))
 
-    def getUserRatio(self, uid):
+    def getUserRatio(self, user_id):
         # SQL query
         self.cursor.execute('SELECT * FROM (SELECT GROUP_CONCAT(IFNULL(ACC / TOTAL, 0) ORDER BY price_id) FROM (SELECT price_id, SUM(has) AS ACC FROM '
                             '(SELECT * FROM userActivity WHERE result = 1) AS A '
@@ -542,7 +555,7 @@ class DBConn:
                             'NATURAL JOIN (SELECT * FROM restaurantCuisine) AS B WHERE user_id = %s GROUP BY cuisine_id) AS C '
                             'NATURAL JOIN (SELECT cuisine_id, SUM(has) AS TOTAL FROM (SELECT * FROM userActivity WHERE result = 1 OR result = -1) AS D '
                             'NATURAL JOIN (SELECT * FROM restaurantCuisine) AS E WHERE user_id = %s GROUP BY cuisine_id) AS F) AS I',
-                            (uid, uid, uid, uid, uid, uid))
+                            (user_id, user_id, user_id, user_id, user_id, user_id))
 
         record = self.cursor.fetchall()[0]
 
@@ -553,18 +566,18 @@ class DBConn:
         return {'price': list(literal_eval(record[0])), 'ordering': list(literal_eval(record[1])), 'cuisine': list(literal_eval(record[2]))}
 
     # 新增使用者的進階搜尋
-    def insertUserAdvanceWithID(self, uid, price, weather, transport, lat, lng):
+    def insertUserAdvanceWithID(self, user_id, price, weather, transport, lat, lng):
 
         price = str(price)
 
         # SQL query
         self.cursor.execute('INSERT INTO userAdvance(user_id, prefer_price, weather, transport, lat, lng) VALUES(%s, %s, %s, %s, %s, %s)',
-                            (uid, price, weather, transport, lat, lng))
+                            (user_id, price, weather, transport, lat, lng))
 
     # 傳回使用者最近n次的進階搜尋
-    def getUserAdvanceWithID(self, uid, n):
+    def getUserAdvanceWithID(self, user_id, n):
         # SQL query
-        self.cursor.execute('SELECT * FROM userAdvance WHERE user_id = %s ORDER BY timestamp DESC LIMIT %s', (uid, n))
+        self.cursor.execute('SELECT * FROM userAdvance WHERE user_id = %s ORDER BY timestamp DESC LIMIT %s', (user_id, n))
 
         result = self.cursor.fetchall()
 
@@ -574,7 +587,7 @@ class DBConn:
         for record in result:
 
             # 每筆資料用dict存
-            dict = {'uid': record[1], 'price': list(literal_eval(record[2])), 'weather': record[3], 'transport': record[4],
+            dict = {'user_id': record[1], 'price': list(literal_eval(record[2])), 'weather': record[3], 'transport': record[4],
                     'lat': record[5], 'lng': record[6]}
 
             lists.append(dict)
@@ -584,20 +597,20 @@ class DBConn:
 
     # ========== TAG ==========
     # 新增tag(type: 1喜歡 -1討厭)
-    def insertTagWithID(self, uid, rid, tag, type):
-        self.cursor.execute('INSERT INTO tags(user_id, restaurant_id, tag, type) VALUES(%s, %s, %s, %s)', (uid, rid, tag, type))
+    def insertTagWithID(self, user_id, restaurant_id, tag, type):
+        self.cursor.execute('INSERT INTO tags(user_id, restaurant_id, tag, type) VALUES(%s, %s, %s, %s)', (user_id, restaurant_id, tag, type))
 
-    # 新增多筆tag list:[(uid, rid, tag, type), ...]
+    # 新增多筆tag list:[(user_id, restaurant_id, tag, type), ...]
     def insertTagsWithID(self, list):
         self.cursor.executemany('INSERT INTO tags(user_id, restaurant_id, tag, type) VALUES(%s, %s, %s, %s)', list)
 
     # 傳回某間餐廳的個別tag數量
-    def getRestaurantTagCount(self, rid):
+    def getRestaurantTagCount(self, restaurant_id):
         # SQL query
-        self.cursor.execute('SELECT tag, COUNT(*) FROM tags WHERE restaurant_id = %s GROUP BY tag', rid)
+        self.cursor.execute('SELECT tag, COUNT(*) FROM tags WHERE restaurant_id = %s GROUP BY tag', restaurant_id)
         return dict(self.cursor.fetchall())
 
-    # 傳回有這個tag的餐廳rid
+    # 傳回有這個tag的餐廳restaurant_id
     def getRestaurantWithTag(self, tag):
         # SQL query
         self.cursor.execute('SELECT DISTINCT restaurant_id FROM tags WHERE tag = %s', tag)
@@ -642,16 +655,16 @@ class DBConn:
         return mat(matrix)
 
     # 新增/更新R2R的相似度
-    def updateR2RSimilarity(self, rid1, rid2, value):
-        # DB的儲存方式為rid1 < rid2
-        if rid1 > rid2:
-            rid1, rid2 = rid2, rid1
+    def updateR2RSimilarity(self, restaurant_id1, restaurant_id2, value):
+        # DB的儲存方式為restaurant_id1 < restaurant_id2
+        if restaurant_id1 > restaurant_id2:
+            restaurant_id1, restaurant_id2 = restaurant_id2, restaurant_id1
 
         # SQL query
         self.cursor.execute('INSERT INTO R2RSimilarity(restaurant_id1, restaurant_id2, similarity) VALUES(%s, %s, %s) '
-                            'ON DUPLICATE KEY UPDATE similarity = %s', (rid1, rid2, value, value))
+                            'ON DUPLICATE KEY UPDATE similarity = %s', (restaurant_id1, restaurant_id2, value, value))
 
-    # 新增/更新多筆R2R的相似度 list:[(rid1, rid2, sim), ...] rid1 < rid2
+    # 新增/更新多筆R2R的相似度 list:[(restaurant_id1, restaurant_id2, sim), ...] restaurant_id1 < restaurant_id2
     def updateR2RSimilarities(self, list):
         param = [((x[1], x[0]) if x[0] > x[1] else (x[0], x[1])) + (x[2], x[2], ) for x in list]
 
@@ -660,13 +673,13 @@ class DBConn:
                                 'ON DUPLICATE KEY UPDATE similarity = %s', param)
 
     # 傳回兩間餐廳的相似度
-    def getR2RSimilarity(self, rid1, rid2):
-        # DB的儲存方式為rid1 < rid2
-        if rid1 > rid2:
-            rid1, rid2 = rid2, rid1
+    def getR2RSimilarity(self, restaurant_id1, restaurant_id2):
+        # DB的儲存方式為restaurant_id1 < restaurant_id2
+        if restaurant_id1 > restaurant_id2:
+            restaurant_id1, restaurant_id2 = restaurant_id2, restaurant_id1
 
         # SQL query
-        self.cursor.execute('SELECT similarity FROM R2RSimilarity WHERE restaurant_id1 = %s AND restaurant_id2 = %s', (rid1, rid2))
+        self.cursor.execute('SELECT similarity FROM R2RSimilarity WHERE restaurant_id1 = %s AND restaurant_id2 = %s', (restaurant_id1, restaurant_id2))
 
         # DB回傳的結果為空
         if self.cursor.rowcount == 0:
@@ -675,18 +688,18 @@ class DBConn:
         return self.cursor.fetchall()[0][0]
 
     # 傳回餐廳對所有餐廳的相似度
-    def getR2RSimilarities(self, rid, same=False):
+    def getR2RSimilarities(self, restaurant_id, same=False):
         # SQL query
         if same:
-            # 包含rid
+            # 包含restaurant_id
             self.cursor.execute('SELECT restaurant_id2, similarity FROM R2RSimilarity WHERE restaurant_id1 = %s UNION '
                                 'SELECT restaurant_id1, similarity FROM R2RSimilarity WHERE restaurant_id2 = %s '
-                                'ORDER BY restaurant_id2', (rid, rid))
+                                'ORDER BY restaurant_id2', (restaurant_id, restaurant_id))
         else:
-            # 不包含rid
+            # 不包含restaurant_id
             self.cursor.execute('SELECT restaurant_id2, similarity FROM R2RSimilarity WHERE restaurant_id1 = %s AND restaurant_id2 != %s UNION '
                                 'SELECT restaurant_id1, similarity FROM R2RSimilarity WHERE restaurant_id2 = %s AND restaurant_id1 != %s '
-                                'ORDER BY restaurant_id2', (rid, rid, rid, rid))
+                                'ORDER BY restaurant_id2', (restaurant_id, restaurant_id, restaurant_id, restaurant_id))
 
         # DB回傳的結果為空
         if self.cursor.rowcount == 0:
@@ -695,12 +708,12 @@ class DBConn:
         return {key: value for (key, value) in self.cursor.fetchall()}
 
     # 新增/更新U2R的相似度
-    def updateU2RSimilarity(self, uid, rid, value):
+    def updateU2RSimilarity(self, user_id, restaurant_id, value):
         # SQL query
         self.cursor.execute('INSERT INTO U2RSimilarity(user_id, restaurant_id, similarity) VALUES(%s, %s, %s) '
-                            'ON DUPLICATE KEY UPDATE similarity = %s', (uid, rid, value, value))
+                            'ON DUPLICATE KEY UPDATE similarity = %s', (user_id, restaurant_id, value, value))
 
-    # 新增/更新多筆U2R的相似度 list:[(uid, rid, sim), ...]
+    # 新增/更新多筆U2R的相似度 list:[(user_id, restaurant_id, sim), ...]
     def updateU2RSimilarities(self, list):
         param = [x + (x[2],) for x in list]
 
@@ -709,9 +722,9 @@ class DBConn:
                                 'ON DUPLICATE KEY UPDATE similarity = %s', param)
 
     # 傳回使用者對餐廳的相似度
-    def getU2RSimilarity(self, uid, rid):
+    def getU2RSimilarity(self, user_id, restaurant_id):
         # SQL query
-        self.cursor.execute('SELECT similarity FROM U2RSimilarity WHERE user_id = %s AND restaurant_id = %s', (uid, rid))
+        self.cursor.execute('SELECT similarity FROM U2RSimilarity WHERE user_id = %s AND restaurant_id = %s', (user_id, restaurant_id))
 
         # DB回傳的結果為空
         if self.cursor.rowcount == 0:
@@ -720,9 +733,9 @@ class DBConn:
         return self.cursor.fetchall()[0][0]
 
     # 傳回使用者對所有餐廳的相似度
-    def getU2RSimilarities(self, uid):
+    def getU2RSimilarities(self, user_id):
         # SQL query
-        self.cursor.execute('SELECT similarity FROM U2RSimilarity WHERE user_id = %s ORDER BY restaurant_id', uid)
+        self.cursor.execute('SELECT similarity FROM U2RSimilarity WHERE user_id = %s ORDER BY restaurant_id', user_id)
 
         # DB回傳的結果為空
         if self.cursor.rowcount == 0:
@@ -731,16 +744,16 @@ class DBConn:
         return {key: value for (key, value) in self.cursor.fetchall()}
 
     # 新增/更新U2U的相似度
-    def updateU2USimilarity(self, uid1, uid2, value):
-        # DB的儲存方式為uid1 < uid2
-        if uid1 > uid2:
-            rid1, rid2 = uid2, uid1
+    def updateU2USimilarity(self, user_id1, user_id2, value):
+        # DB的儲存方式為user_id1 < user_id2
+        if user_id1 > user_id2:
+            user_id1, user_id2 = user_id2, user_id1
 
         # SQL query
         self.cursor.execute('INSERT INTO U2USimilarity(user_id1, user_id2, similarity) VALUES(%s, %s, %s) '
-                            'ON DUPLICATE KEY UPDATE similarity = %s', (uid1, uid2, value, value))
+                            'ON DUPLICATE KEY UPDATE similarity = %s', (user_id1, user_id2, value, value))
 
-    # 新增/更新多筆U2U的相似度 list:[(uid1, uid2, sim), ...] uid1 < uid2
+    # 新增/更新多筆U2U的相似度 list:[(user_id1, user_id2, sim), ...] user_id1 < user_id2
     def updateU2USimilarities(self, list):
         param = [((x[1], x[0]) if x[0] > x[1] else (x[0], x[1])) + (x[2], x[2], ) for x in list]
 
@@ -749,13 +762,13 @@ class DBConn:
                                 'ON DUPLICATE KEY UPDATE similarity = %s', param)
 
     # 傳回兩個使用者的相似度
-    def getU2USimilarity(self, uid1, uid2):
-        # DB的儲存方式為uid1 < uid2
-        if uid1 > uid2:
-            uid1, uid2 = uid2, uid1
+    def getU2USimilarity(self, user_id1, user_id2):
+        # DB的儲存方式為user_id1 < user_id2
+        if user_id1 > user_id2:
+            user_id1, user_id2 = user_id2, user_id1
 
         # SQL query
-        self.cursor.execute('SELECT similarity FROM U2USimilarity WHERE user_id1 = %s AND user_id2 = %s', (uid1, uid2))
+        self.cursor.execute('SELECT similarity FROM U2USimilarity WHERE user_id1 = %s AND user_id2 = %s', (user_id1, user_id2))
 
         # DB回傳的結果為空
         if self.cursor.rowcount == 0:
@@ -764,18 +777,18 @@ class DBConn:
         return self.cursor.fetchall()[0][0]
 
     # 傳回使用者對所有使用者的相似度
-    def getU2USimilarities(self, uid, n, same=False):
+    def getU2USimilarities(self, user_id, n, same=False):
         # SQL query
         if same:
-            # 包含uid
+            # 包含user_id
             self.cursor.execute('SELECT user_id2, similarity FROM U2USimilarity WHERE user_id1 = %s UNION '
                                 'SELECT user_id1, similarity FROM U2USimilarity WHERE user_id2 = %s '
-                                'ORDER BY similarity DESC LIMIT %s', (uid, uid, n))
+                                'ORDER BY similarity DESC LIMIT %s', (user_id, user_id, n))
         else:
-            # 不包含uid
+            # 不包含user_id
             self.cursor.execute('SELECT user_id2, similarity FROM U2USimilarity WHERE user_id1 = %s AND user_id2 != %s UNION '
                                 'SELECT user_id1, similarity FROM U2USimilarity WHERE user_id2 = %s AND user_id1 != %s '
-                                'ORDER BY similarity DESC LIMIT %s', (uid, uid, uid, uid, n))
+                                'ORDER BY similarity DESC LIMIT %s', (user_id, user_id, user_id, user_id, n))
 
         # DB回傳的結果為空
         if self.cursor.rowcount == 0:
@@ -784,12 +797,12 @@ class DBConn:
         return {key: value for (key, value) in self.cursor.fetchall()}
 
     # 傳回使用者對餐廳的TFIDF
-    def getTFIDFWithIDs(self, uid, rid):
+    def getTFIDFWithIDs(self, user_id, restaurant_id):
         # SQL query
         self.cursor.execute('SELECT SUM(TFIDF) FROM (SELECT (COUNT(*) / (SELECT COUNT(*) FROM tags WHERE restaurant_id = %s) * IDF) AS TFIDF '
                             'FROM ((SELECT tag, LOG((SELECT COUNT(*) FROM restaurantInfo) / COUNT(DISTINCT restaurant_id)) AS IDF FROM tags GROUP BY tag) AS A '
                             'NATURAL JOIN (SELECT tag FROM tags WHERE user_id = %s GROUP BY tag) AS B '
-                            'NATURAL JOIN (SELECT tag FROM tags WHERE restaurant_id = %s) AS C) GROUP BY tag) AS D', (rid, uid, rid))
+                            'NATURAL JOIN (SELECT tag FROM tags WHERE restaurant_id = %s) AS C) GROUP BY tag) AS D', (restaurant_id, user_id, restaurant_id))
 
         # DB回傳的結果為空
         if self.cursor.rowcount == 0:
@@ -798,7 +811,7 @@ class DBConn:
         return self.cursor.fetchall()[0][0]
 
     # 傳回使用者對所有餐廳的TFIDF
-    def getTFIDFWithID(self, uid):
+    def getTFIDFWithID(self, user_id):
         # SQL query
         self.cursor.execute('SELECT restaurant_id, IFNULL(SUM(TFIDF), 0) FROM (SELECT restaurant_id, ((COUNT(*) / TOTAL) * IDF) AS TFIDF FROM '
                             '(SELECT restaurant_id FROM restaurantInfo) AS A LEFT JOIN '
@@ -806,49 +819,29 @@ class DBConn:
                             '(SELECT tag, LOG((SELECT COUNT(*) FROM restaurantInfo) / COUNT(DISTINCT restaurant_id)) AS IDF FROM tags GROUP BY tag) AS C NATURAL JOIN '
                             '(SELECT tag FROM tags WHERE user_id = %s GROUP BY tag) AS D) USING(restaurant_id) LEFT JOIN '
                             '(SELECT restaurant_id, COUNT(*) AS TOTAL FROM tags GROUP BY restaurant_id) AS E USING(restaurant_id) '
-                            'GROUP BY restaurant_id, tag) AS F GROUP BY(restaurant_id)', uid)
+                            'GROUP BY restaurant_id, tag) AS F GROUP BY(restaurant_id)', user_id)
 
         return {key: float(value) for (key, value) in self.cursor.fetchall()}
 
 
     # ========== WEIGHT ==========
     # 新增權重 dict:{R2R, U2R, U2U, context, ...}
-    def insertWeightWithID(self, uid, dict):
+    def insertWeightWithID(self, user_id, dict):
         # SQL query
         self.cursor.execute('INSERT INTO weight(user_id, ' + ', '.join(dict.keys()) + ') VALUES(%s, ' + ', '.join(['%s'] * len(dict)) + ')',
-                            ((uid, ) + tuple(dict.values())))
+                            ((user_id, ) + tuple(dict.values())))
 
     # 傳回使用者最新的權重
-    def getWeightWithID(self, uid):
+    def getWeightWithID(self, user_id):
         # SQL query
-        self.cursor.execute('SELECT * from weight WHERE user_id = %s ORDER BY timestamp DESC LIMIT 1', uid)
+        self.cursor.execute('SELECT * from weight WHERE user_id = %s ORDER BY timestamp DESC LIMIT 1', user_id)
         record = self.cursor.fetchall()[0]
-        return {'uid': record[1], 'R2R': record[2], 'U2R': record[3], 'U2U': record[4], 'context': record[5],
+        return {'user_id': record[1], 'R2R': record[2], 'U2R': record[3], 'U2U': record[4], 'context': record[5],
                 'R2R_distance': record[6], 'R2R_price': record[7], 'R2R_ordering': record[8], 'R2R_cuisine': record[9],
                 'U2R_TFIDF': record[10], 'U2R_price': record[11], 'U2R_ordering': record[12], 'U2R_cuisine': record[13],
                 'U2U_tag': record[14], 'U2U_price': record[15], 'U2U_ordering': record[16], 'U2U_cuisine': record[17],
                 'context_1': record[18], 'context_2': record[19], 'context_3': record[20], 'context_4': record[21]}
 
 
-    def deleteUserInfo(self, uid):
-        # db_uid = self.getUserIDWithUserKey(user_key)
-        # if db_uid == None:
-        #     return "Can not found user with this user_key"
-        # if db_uid != uid:
-        #     return "Wrong user_key or uid, don't play server!"
-        # else:
-        self.cursor.execute("DELETE FROM U2RWeight WHERE user_id = %s", uid)
-        self.cursor.execute("DELETE FROM U2USimilarity WHERE user_id1 = %s OR user_id2 = %s", (uid,uid) )
-        self.cursor.execute("DELETE FROM userActivity WHERE user_id = %s", uid )
-        self.cursor.execute("DELETE FROM userAdvance WHERE user_id = %s", uid )
-        self.cursor.execute("DELETE FROM userCollection WHERE user_id = %s", uid)
-        self.cursor.execute("DELETE FROM userCuisine WHERE user_id = %s", uid)
-        self.cursor.execute("DELETE FROM userModel WHERE user_id = %s", uid)
-        self.cursor.execute("DELETE FROM userOrdering WHERE user_id = %s", uid)
-        self.cursor.execute("DELETE FROM userPrice WHERE user_id = %s", uid)
-        self.cursor.execute("DELETE FROM weight WHERE user_id = %s", uid)
-        self.cursor.execute("DELETE FROM userInfo WHERE user_id = %s", uid)
-
-        return "delete UserInfo success!"
 # 常用的update? => executemany
 # timestamp? => which table?

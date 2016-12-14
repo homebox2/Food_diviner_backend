@@ -24,7 +24,28 @@ def welcome_message():
 
 @application.route("/users/<user_id>/recommendation",methods=["POST"])
 def get_recommendation(user_id):
+    req = request.get_json()
+
+    missing = check_missing(req, ['advance', 'prefer_prices', 'weather', 'transport', 'lat', 'lng'])
+    if missing:
+        js = json.dumps({'message': 'Missing field(s): ' + ', '.join(missing)})
+        resp = Response(js, status=400, mimetype='application/json')
+        return resp
+
     conn.open()
+    user = conn.getUserInfoWithID(user_id)
+    if req['advance']:
+        user["price"] = req["prefer_prices"]  # advance 啟動時覆蓋掉原本user的price
+        conn.insertUserAdvanceWithID(user_id, req["prefer_prices"], req["weather"],
+                                     req["transport"], req["lat"], req["lng"])
+
+    WEIGHT_CONTEXT = 0.25
+    restaurants = {r['restaurant_id']: r for r in conn.getRestaurantsInfo()}  # 將餐廳陣列轉換為以restaurant_id為key的dict。
+    print("get request ", datetime.now())
+
+    scores = {}
+    for restaurant_id in restaurants.keys():
+        scores[restaurant_id] = 0  # 初始化每個餐廳的分數。
 
     weights = conn.getWeightWithID(user_id)
     u2r_weights = {
@@ -33,29 +54,6 @@ def get_recommendation(user_id):
         'cuisine': weights['U2R_cuisine'],
         'tfidf': weights['U2R_TFIDF']
     }
-    req = request.get_json()
-
-    if req and 'advance' in req and req['advance']:
-        missing = check_missing(req, ['prefer_prices', 'weather', 'transport', 'lat', 'lng'])
-        if missing:
-            js = json.dumps({'message': 'Missing field(s): ' + ', '.join(missing)})
-            resp = Response(js, status=400, mimetype='application/json')
-            return resp
-        conn.insertUserAdvanceWithID(user_id, req["prefer_prices"], req["weather"], req["transport"], req["lat"],
-                                     req["lng"])
-
-    WEIGHT_CONTEXT = 0.25
-
-    conn.open()
-    user = conn.getUserInfoWithID(user_id)
-    if req and 'advance' in req and req['advance']:
-        user["price"] = req["prefer_prices"]  # advance 啟動時覆蓋掉原本user的price
-    restaurants = {r['rid']: r for r in conn.getRestaurantsInfo()}  # 將餐廳陣列轉換為以rid為key的dict。
-    print("get request ", datetime.now())
-
-    scores = {}
-    for rid in restaurants.keys():
-        scores[rid] = 0  # 初始化每個餐廳的分數。
 
     print("init restaurant scores ", datetime.now())
 
@@ -97,7 +95,7 @@ def get_recommendation(user_id):
     from u2r import calc_u2r
     for restaurant in restaurants_num:
         # TODO 把user各項count做
-        matches[restaurant['rid']] = calc_u2r(user, restaurant, tfidf[restaurant['rid']], u2r_weights)
+        matches[restaurant['restaurant_id']] = calc_u2r(user, restaurant, tfidf[restaurant['restaurant_id']], u2r_weights)
 
     for r, s in matches.items():
         scores[r] += s * weights['U2R']
@@ -112,11 +110,11 @@ def get_recommendation(user_id):
 
     # 將在推薦名單中的餐廳資訊放入list。
     counter = 0
-    for rid, score in sorted_scores:
-        key = str(user_id) + "-" + str(rid)
+    for restaurant_id, score in sorted_scores:
+        key = str(user_id) + "-" + str(restaurant_id)
         dummy = cache.get(key)  # 利用暫存來紀錄最近被接受或拒絕過的結果，避免重複推薦。
         if not dummy:
-            recommendations.append(restaurants[rid])
+            recommendations.append(restaurants[restaurant_id])
             counter += 1
             if counter >= 10:
                 break
@@ -125,8 +123,6 @@ def get_recommendation(user_id):
     for restaurant in recommendations:
         restaurant['tags'].extend(restaurant['remark'])
         restaurant['tags'].extend(restaurant['special'])
-        restaurant['restaurant_id'] = restaurant['rid']
-        del restaurant['rid']
         del restaurant['remark']
         del restaurant['special']
         # 增加 image 資料
@@ -282,8 +278,8 @@ def register():
         user_id = conn.insertUserInfo(req['name'], req['gender'], req['user_key'], '')
         conn.insertWeightWithID(user_id, init_weight)
 
-        for rid, result in req['user_trial'].items():
-            conn.insertUserActivity(user_id, eval(rid), 0, 1 if result == 1 else -1)  # 第0 run就接受或拒絕代表初始問題。
+        for restaurant_id, result in req['user_trial'].items():
+            conn.insertUserActivity(user_id, eval(restaurant_id), 0, 1 if result == 1 else -1)  # 第0 run就接受或拒絕代表初始問題。
 
         user_avg = conn.getUserAverage()
         user_ratio = conn.getUserRatio(user_id)  # 取得使用者在價格、菜式、點菜方式各項屬性接受的比例。
@@ -311,7 +307,7 @@ def register():
         }
         u2u_similarities = []
         for user in users:
-            u2u_similarities.append((user['uid'], user_id, float(calc_u2u(this_user, user, u2u_weight))))
+            u2u_similarities.append((user['user_id'], user_id, float(calc_u2u(this_user, user, u2u_weight))))
         print("update u2u", u2u_similarities)
         conn.updateU2USimilarities(u2u_similarities)
         js = json.dumps({'user_id': user_id}, ensure_ascii=False)
@@ -360,7 +356,7 @@ def get_image(image_id):
 def invalidate(user_id):
     conn.open()
     for r in conn.getRestaurantsNum():
-        cache.delete("-".join([user_id, str(r['rid'])]))
+        cache.delete("-".join([user_id, str(r['restaurant_id'])]))
     conn.close()
     js = json.dumps({'success': True})
     return Response(js, status=200, mimetype='application/json')
