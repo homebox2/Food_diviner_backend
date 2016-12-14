@@ -26,11 +26,12 @@ def welcome_message():
 def get_recommendation(user_id):
     req = request.get_json()
 
-    missing = check_missing(req, ['advance', 'prefer_prices', 'weather', 'transport', 'lat', 'lng'])
-    if missing:
-        js = json.dumps({'message': 'Missing field(s): ' + ', '.join(missing)})
-        resp = Response(js, status=400, mimetype='application/json')
-        return resp
+    if req["advance"] == True:
+        missing = check_missing(req, ['advance', 'prefer_prices', 'weather', 'transport', 'lat', 'lng'])
+        if missing:
+            js = json.dumps({'message': 'Missing field(s): ' + ', '.join(missing)})
+            resp = Response(js, status=400, mimetype='application/json')
+            return resp
 
     conn.open()
     user = conn.getUserInfoWithID(user_id)
