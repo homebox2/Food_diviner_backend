@@ -26,16 +26,16 @@ def welcome_message():
 def get_recommendation(user_id):
     req = request.get_json()
 
-    if req["advance"] == True:
+    conn.open()
+    user = conn.getUserInfoWithID(user_id)
+
+    if req["advance"]:
         missing = check_missing(req, ['advance', 'prefer_prices', 'weather', 'transport', 'lat', 'lng'])
         if missing:
             js = json.dumps({'message': 'Missing field(s): ' + ', '.join(missing)})
             resp = Response(js, status=400, mimetype='application/json')
             return resp
 
-    conn.open()
-    user = conn.getUserInfoWithID(user_id)
-    if req['advance']:
         user["price"] = req["prefer_prices"]  # advance 啟動時覆蓋掉原本user的price
         conn.insertUserAdvanceWithID(user_id, req["prefer_prices"], req["weather"],
                                      req["transport"], req["lat"], req["lng"])
@@ -344,13 +344,10 @@ def test_fb_registered():
 
 @application.route('/images/<image_id>')
 def get_image(image_id):
-    image_path = image_id.split("_")
-    dir_path = './images/' + str(image_path[0])
+    image_name = "{0:03}".format(int(image_id)) + ".jpg"
+    dir_path = './images/'
 
-    try:
-        return send_from_directory(dir_path, image_path[1] + ".jpg")
-    except:
-        return send_from_directory(dir_path, image_path[1] + ".png")
+    return send_from_directory(dir_path, image_name)
 
 
 @application.route('/users/<user_id>/caches', methods=['DELETE'])
