@@ -127,9 +127,10 @@ def get_recommendation(user_id):
         del restaurant['remark']
         del restaurant['special']
         # 增加 image 資料
-        import glob
-        image_list = glob.glob("./images/" + str(restaurant["restaurant_id"]) + "/*.*")
-        restaurant["image"] = [str(restaurant['restaurant_id']) + "_" + x[-6:-4] for x in image_list]
+        restaurant["image"] = [str(restaurant['restaurant_id'])]
+        # import glob
+        # image_list = glob.glob("./images/" + str(restaurant["restaurant_id"]) + "/*.*")
+        # restaurant["image"] = [str(restaurant['restaurant_id']) + "_" + x[-6:-4] for x in image_list]
 
     js = json.dumps(recommendations, ensure_ascii=False, indent=4)
 
@@ -347,8 +348,10 @@ def get_image(image_id):
     image_name = "{0:03}".format(int(image_id)) + ".jpg"
     dir_path = './images/'
 
-    return send_from_directory(dir_path, image_name)
-
+    try:
+        return send_from_directory(dir_path, image_name)
+    except:
+        return send_from_directory(dir_path,"000.jpg")
 
 @application.route('/users/<user_id>/caches', methods=['DELETE'])
 def invalidate(user_id):
