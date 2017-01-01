@@ -1,13 +1,12 @@
 # -*- coding: utf8 -*-
-import json
-from errorhandler import *
 from datetime import datetime
 
-from flask import Flask, request, Response, abort, send_from_directory
+from flask import request, abort, send_from_directory
+from pymysql import IntegrityError
 from werkzeug.contrib.cache import SimpleCache
 
 from db import DBConn
-from pymysql import IntegrityError
+from errorhandler import *
 
 DEFAULT_RECENT_RESTAURANT_NUM = 3
 DEFAULT_SIM_USER_NUM = 3
@@ -93,7 +92,7 @@ def get_recommendation(user_id):
     tfidf = conn.getTFIDFWithID(user_id)
 
     matches = {}
-    from u2r import calc_u2r
+    from Algorithm_Module.u2r import calc_u2r
     for restaurant in restaurants_num:
         # TODO 把user各項count做
         matches[restaurant['restaurant_id']] = calc_u2r(user, restaurant, tfidf[restaurant['restaurant_id']], u2r_weights)
@@ -138,7 +137,6 @@ def get_recommendation(user_id):
 
     return resp
 
-
 @application.route('/users/<user_id>/collections', methods=['POST', 'GET'])
 def collect_restaurant(user_id):
     if request.method == 'GET':
@@ -160,7 +158,6 @@ def collect_restaurant(user_id):
     conn.close()
     return Response(status=200)
 
-
 @application.route('/users/<user_id>/ratings', methods=['POST'])
 def post_user_ratings(user_id):
     req = request.get_json()
@@ -179,7 +176,6 @@ def post_user_ratings(user_id):
 
     conn.close()
     return Response(status=200)
-
 
 @application.route('/user_choose', methods=['POST'])
 def post_choice():
@@ -226,7 +222,6 @@ def post_choice():
     conn.close()
     return Response(status=200)
 
-
 @application.route('/restaurants/<restaurant_id>/ratings')
 def get_restaurant_ratings(restaurant_id):
     """
@@ -235,7 +230,6 @@ def get_restaurant_ratings(restaurant_id):
     :return: 平均評價及各tag的數量。
     """
     abort(501)
-
 
 @application.route('/signup', methods=['POST'])
 def register():
@@ -299,7 +293,7 @@ def register():
 
         users = conn.getUsersInfo()
         this_user = conn.getUserInfoWithID(user_id)
-        from u2u import calc_u2u
+        from Algorithm_Module.u2u import calc_u2u
 
         u2u_weight = {
             "tag": init_weight['U2U_tag'],
@@ -322,7 +316,6 @@ def register():
     finally:
         conn.close()
 
-
 @application.route('/test', methods=['POST'])
 def test_fb_registered():
     req = request.get_json()
@@ -342,7 +335,6 @@ def test_fb_registered():
         js = json.dumps({'user_id': user_id}, ensure_ascii=False)
         return Response(js, status=200, mimetype='application/json')
 
-
 @application.route('/images/<image_id>')
 def get_image(image_id):
     image_name = "{0:03}".format(int(image_id)) + ".jpg"
@@ -351,7 +343,8 @@ def get_image(image_id):
     try:
         return send_from_directory(dir_path, image_name)
     except:
-        return send_from_directory(dir_path,"000.jpg")
+        js = json.dumps({'message': 'picture not found!'})
+        return Response(js, status=405, mimetype='application/json')
 
 @application.route('/users/<user_id>/caches', methods=['DELETE'])
 def invalidate(user_id):

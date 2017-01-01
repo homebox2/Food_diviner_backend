@@ -20,7 +20,6 @@ def calc_r2r(r1, r2, distance, order_sim_matrix, cuisine_sim_matrix, weight):
     :param cuisine_sim_matrix 餐廳菜式的相似矩陣。
     :return: 餐廳之間的相似度，介於0~1之間。數值越大代表相似度越高。 
     """
-    print(r1['price'], r2['price'])
     distance_sim = calc_distance_sim(distance) * weight["distance"]
     price_sim = calc_price_sim(r1["price"], r2["price"]) * weight["price"]
     ordering_sim = calc_ordering_sim(r1["ordering"], r2["ordering"], order_sim_matrix) * weight["ordering"]
@@ -59,6 +58,8 @@ if __name__ == '__main__':
     # 直接執行r2R.py的時候，輸出餐廳相似矩陣的csv
     from db import DBConn
 
+    weight = {"distance":0.2,"price":0.3,"ordering":0.15,"cuisine":0.35}
+
     conn = DBConn()
     conn.open()
     restaurants_num = conn.getRestaurantsNum()
@@ -70,7 +71,13 @@ if __name__ == '__main__':
         for j in range(i, num):
             restaurant2 = restaurants_num[j]
 
-            sim = calc_r2r(restaurant1, restaurant2, conn.getRestaurantDistance(restaurant1['rid'], restaurant2['rid']),
-                           order_sim＿matrix, cuisine_sim_matrix) if restaurant1['rid'] != restaurant2['rid'] else 1
-            similarities.append((restaurant1['rid'], restaurant2['rid'], sim))
+            sim = calc_r2r(restaurant1, restaurant2, conn.getRestaurantDistance(restaurant1['restaurant_id'], restaurant2['restaurant_id']),
+                           order_sim＿matrix, cuisine_sim_matrix,weight) if restaurant1['restaurant_id'] != restaurant2['restaurant_id'] else 1
+            similarities.append((restaurant1['restaurant_id'], restaurant2['restaurant_id'], sim))
+            print(restaurant1)
+            print(restaurant2)
+            print(sim)
+
     conn.close()
+
+    print(similarities)
