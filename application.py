@@ -1,14 +1,15 @@
 # -*- coding: utf8 -*-
-import sys, os
+import sys, os, json
 sys.path.append(os.path.dirname(__file__))
+# sys.path.insert(0,"/opt/python/current/app")
 
 from datetime import datetime
-from flask import request, abort, send_from_directory
+from flask import Flask, request, abort, send_from_directory, Response
 from pymysql import IntegrityError
 from werkzeug.contrib.cache import SimpleCache
 
 from db import DBConn
-from errorhandler import *
+# from errorhandler import *
 
 DEFAULT_RECENT_RESTAURANT_NUM = 3
 DEFAULT_SIM_USER_NUM = 3
@@ -379,5 +380,27 @@ def check_missing(actual, expect_fields):
 
 
 if __name__ == '__main__':
-    application.debug = True
+    # application.debug = True
     application.run()
+
+@application.errorhandler(405)
+def handle_405(error):
+    js = json.dumps({'message': 'Method not allowed'})
+    resp = Response(js, status=405, mimetype='application/json')
+    return resp
+
+@application.errorhandler(404)
+def handle_404(error):
+    js = json.dumps({'message': 'Method not defined'})
+    resp = Response(js, status=404, mimetype='application/json')
+    return resp
+
+@application.errorhandler(501)
+def handle_501(error):
+    resp = Response(json.dumps({'message': 'Method not implemented'}), status=501, mimetype='application/json')
+    return resp
+
+@application.errorhandler(500)
+def handle_500(error):
+    resp = Response(json.dumps({'message': 'Unknown error'}), status=500, mimetype='application/json')
+    return resp
