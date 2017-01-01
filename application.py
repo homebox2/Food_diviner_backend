@@ -1,6 +1,8 @@
 # -*- coding: utf8 -*-
-from datetime import datetime
+import sys, os
+sys.path.append(os.path.dirname(__file__))
 
+from datetime import datetime
 from flask import request, abort, send_from_directory
 from pymysql import IntegrityError
 from werkzeug.contrib.cache import SimpleCache
