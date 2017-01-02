@@ -1,4 +1,4 @@
-from similarity import *
+from Algorithm_Module.similarity import *
 
 # WEIGHT_TFIDF = 0.25
 # WEIGHT_PRICE = 0.25

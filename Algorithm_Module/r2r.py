@@ -2,7 +2,7 @@
 計算餐廳之間的相似度。
 """
 
-from similarity import similarity
+from Algorithm_Module.similarity import similarity
 
 # WEIGHT_DISTANCE = 0.2
 # WEIGHT_PRICE = 0.3

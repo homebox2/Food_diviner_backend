@@ -1,4 +1,4 @@
-from similarity import *
+from Algorithm_Module.similarity import *
 
 
 # WEIGHT_TAG = 0.25

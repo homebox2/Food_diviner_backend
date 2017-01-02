@@ -1,7 +1,7 @@
 # -*- coding: utf8 -*-
 import sys, os, json
 sys.path.append(os.path.dirname(__file__))
-# sys.path.insert(0,"/opt/python/current/app")
+sys.path.insert(0,"/opt/python/current/app")
 
 from datetime import datetime
 from flask import Flask, request, abort, send_from_directory, Response
@@ -378,11 +378,6 @@ def check_missing(actual, expect_fields):
             missing.append(field)
     return missing
 
-
-if __name__ == '__main__':
-    # application.debug = True
-    application.run()
-
 @application.errorhandler(405)
 def handle_405(error):
     js = json.dumps({'message': 'Method not allowed'})
@@ -404,3 +399,8 @@ def handle_501(error):
 def handle_500(error):
     resp = Response(json.dumps({'message': 'Unknown error'}), status=500, mimetype='application/json')
     return resp
+
+if __name__ == '__main__':
+    # application.debug = True
+    application.run()
+
