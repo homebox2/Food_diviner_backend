@@ -35,7 +35,7 @@ def calc_distance_sim(distance):
     """
     if distance < 0:
         return 0
-    sim = (1 - distance ** 3)
+    sim = (1 - distance ** 2)
     return sim if sim > 0 else 0
 
 
